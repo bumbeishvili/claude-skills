@@ -1,0 +1,9 @@
+{
+  "name": "light-cms",
+  "description": "Lightweight Git-backed CMS for SvelteKit + Vercel: Google-auth admin editors, saves that commit content JSON to GitHub via the Contents API, Vercel auto-deploy, and public pages that read bundled JSON. No database or headless CMS.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "david@infogr8.com"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}
