@@ -1,0 +1,9 @@
+{
+  "name": "ai-deslop",
+  "description": "Write prose a skeptical reader can check: numbers you measured and claims you can attribute, in sentences without the padding that gives generated text away. Covers chat replies, docs, READMEs, commit bodies, PR descriptions and code comments, and branches on audience — a full style pass for human-facing prose, structure-preserving rules for files a model reads. Includes an audit procedure for cleaning up an existing document on request.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

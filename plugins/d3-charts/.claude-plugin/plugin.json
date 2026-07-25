@@ -3,7 +3,7 @@
   "description": "Reusable D3.js chart convention: a chainable Chart class and an enter-exit-update `_add()` helper that make visualizations responsive, updatable, framework-agnostic, and free of the duplicate-element re-render bug.",
   "author": {
     "name": "David Bumbeishvili",
-    "email": "david@infogr8.com"
+    "email": "me@davidb.dev"
   },
   "homepage": "https://github.com/bumbeishvili/claude-skills"
 }

@@ -1,0 +1,9 @@
+{
+  "name": "playwright-repro",
+  "description": "A discipline for fixing web bugs with throwaway Playwright scripts: reproduce the bug in a script before diagnosing it, measure against ground truth instead of assuming, apply the smallest fix, then re-run the same script to prove it. Includes a copy-ready script template, recipes for auth reuse, console/network capture, in-page state reads and pixel checks, and the measurement traps that make a script lie to you.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

@@ -2,7 +2,7 @@
   "name": "claude-skills",
   "owner": {
     "name": "David Bumbeishvili",
-    "email": "david@infogr8.com"
+    "email": "me@davidb.dev"
   },
   "description": "Reusable Claude Code skills by infogr8 — packaged as per-skill plugins so a project installs only what it needs.",
   "plugins": [
@@ -13,6 +13,14 @@
     {
       "name": "light-cms",
       "source": "./plugins/light-cms"
+    },
+    {
+      "name": "playwright-repro",
+      "source": "./plugins/playwright-repro"
+    },
+    {
+      "name": "ai-deslop",
+      "source": "./plugins/ai-deslop"
     }
   ]
 }
