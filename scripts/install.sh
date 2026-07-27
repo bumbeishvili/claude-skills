@@ -3,8 +3,8 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | bash
 #
-# Writes .claude/skills/<skill> for every skill, plus .claude/CLAUDE.md and
-# .claude/settings.local.json, into the directory you run it from.
+# Writes .claude/skills/<skill> for every skill, plus .claude/CLAUDE.md,
+# .claude/ABOUT.md and .claude/settings.local.json, into the directory you run it from.
 #
 # Anything already there is kept. FORCE=1 replaces it, moving the old copy to
 # <name>.bak-<timestamp> first.
@@ -18,19 +18,31 @@ SKILLS="ai-deslop d3-charts light-cms mcp-api-integration playwright-repro"
 FORCE="${FORCE:-0}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
-command -v npx >/dev/null || { echo "npx is required" >&2; exit 1; }
+# Bounded and retried, so a transient blip does not abort the run and a stalled
+# connection cannot hang forever. The preflight uses tighter limits because it runs
+# three times before any work starts.
+CURL=(curl -fsSL --connect-timeout 10 --max-time 60 --retry 2 --retry-delay 2)
+CURL_CHECK=(curl -fsSL --connect-timeout 5 --max-time 10 --retry 1 --retry-delay 1)
+
+command -v npx  >/dev/null || { echo "npx is required" >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl is required" >&2; exit 1; }
 
-# Check every remote file resolves before writing anything, so a missing one
-# cannot leave a half-installed .claude behind.
+CFG_NAME=(CLAUDE.md ABOUT.md settings.local.json)
+CFG_URL=("$RAW/.claude/CLAUDE.md" "$RAW/.claude/ABOUT.md" "$RAW/templates/settings.local.json")
+CFG_DEST=(.claude/CLAUDE.md .claude/ABOUT.md .claude/settings.local.json)
+
+# Check every remote file resolves before writing anything, so a missing one cannot
+# leave a half-installed .claude behind.
+echo "checking $REPO@$BRANCH"
 missing=""
-for u in "$RAW/.claude/CLAUDE.md" "$RAW/.claude/ABOUT.md" "$RAW/templates/settings.local.json"; do
-  curl -fsIL -o /dev/null "$u" 2>/dev/null || missing="$missing  $u"
+for i in "${!CFG_URL[@]}"; do
+  "${CURL_CHECK[@]}" -o /dev/null "${CFG_URL[$i]}" </dev/null 2>/dev/null \
+    || missing="$missing  ${CFG_URL[$i]}"$'\n'
 done
 if [ -n "$missing" ]; then
-  echo "these are not reachable on $REPO@$BRANCH:" >&2
-  printf '%s\n' "$missing" >&2
-  echo "nothing was written." >&2
+  echo "not reachable:" >&2
+  printf '%s' "$missing" >&2
+  echo "nothing was written. re-run to retry — this is often a transient network error." >&2
   exit 1
 fi
 
@@ -39,32 +51,30 @@ can_write() {
   local path="$1" label="$2"
   [ -e "$path" ] || return 0
   if [ "$FORCE" != "1" ]; then
-    printf '  kept     %-24s exists; FORCE=1 to replace\n' "$label"
+    printf '  %-22s kept (exists; FORCE=1 to replace)\n' "$label"
     return 1
   fi
   mv "$path" "$path.bak-$STAMP"
-  printf '  backup   %-24s -> %s.bak-%s\n' "$label" "$(basename "$path")" "$STAMP"
+  printf '  %-22s backed up to %s.bak-%s\n' "$label" "$(basename "$path")" "$STAMP"
 }
 
 mkdir -p .claude/skills
 
-echo "skills"
+echo "skills (first run downloads degit, this takes a moment)"
 for s in $SKILLS; do
   can_write ".claude/skills/$s" "$s" || continue
-  npx --yes degit "$REPO/plugins/$s/skills/$s#$BRANCH" ".claude/skills/$s" >/dev/null
-  printf '  added    %s\n' "$s"
+  printf '  %-22s ' "$s"
+  # </dev/null so npx cannot read the script off this pipe when run as curl | bash.
+  npx --yes degit "$REPO/plugins/$s/skills/$s#$BRANCH" ".claude/skills/$s" </dev/null >/dev/null 2>&1 \
+    && echo "ok" || { echo "failed"; exit 1; }
 done
 
 echo "config"
-fetch() {
-  local url="$1" dest="$2" label="$3"
-  can_write "$dest" "$label" || return 0
-  curl -fsSL "$url" -o "$dest"
-  printf '  added    %s\n' "$label"
-}
-fetch "$RAW/.claude/CLAUDE.md"                .claude/CLAUDE.md           CLAUDE.md
-fetch "$RAW/.claude/ABOUT.md"                 .claude/ABOUT.md            ABOUT.md
-fetch "$RAW/templates/settings.local.json"    .claude/settings.local.json settings.local.json
+for i in "${!CFG_URL[@]}"; do
+  can_write "${CFG_DEST[$i]}" "${CFG_NAME[$i]}" || continue
+  printf '  %-22s ' "${CFG_NAME[$i]}"
+  "${CURL[@]}" -o "${CFG_DEST[$i]}" "${CFG_URL[$i]}" </dev/null && echo "ok" || { echo "failed"; exit 1; }
+done
 
 echo
 echo "done -> $(pwd)/.claude"
