@@ -21,6 +21,10 @@
     {
       "name": "ai-deslop",
       "source": "./plugins/ai-deslop"
+    },
+    {
+      "name": "mcp-api-integration",
+      "source": "./plugins/mcp-api-integration"
     }
   ]
 }

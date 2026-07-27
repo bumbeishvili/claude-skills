@@ -12,7 +12,11 @@ Needs `npx`. Invoke with `/ai-deslop`, or ask to deslop a file.
 
 ### Making it always on
 
-A skill loads when the task matches its description, and writing style is not a task. To apply it to every reply, add this to `.claude/CLAUDE.md`:
+A skill loads when the task matches its description, and writing style is not a task.
+
+Installing the whole plugin handles it. A `SessionStart` hook feeds `hooks/deslop-directive.md` into every session — the substance rules plus the tells that slip in practice, with a pointer to the full file.
+
+The `degit` command above copies `skills/ai-deslop` only, so a skill-only install has no hook. Add the line yourself:
 
 ```markdown
 When writing any prose — chat replies, docs, commits, PRs, comments — follow `.claude/skills/ai-deslop/SKILL.md`.
@@ -22,7 +26,7 @@ When writing any prose — chat replies, docs, commits, PRs, comments — follow
 
 Human-facing prose takes the full pass. Files a model reads — SKILL.md, CLAUDE.md, specs, prompts — keep their headings, bullets, bold keys and tables, and take the substance and instruction-framing rules only.
 
-The rules are in `skills/ai-deslop/SKILL.md`.
+Full rules in `skills/ai-deslop/SKILL.md`, session directive in `hooks/deslop-directive.md`.
 
 ## Sources
 

@@ -1,2 +1,6 @@
 # Personal, machine-local Claude Code settings — never commit these
 .claude/settings.local.json
+
+# Python bytecode, generated whenever a client in mcp-api-integration is run or compiled
+__pycache__/
+*.pyc

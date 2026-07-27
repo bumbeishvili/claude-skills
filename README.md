@@ -43,3 +43,13 @@ npx degit bumbeishvili/claude-skills/plugins/ai-deslop/skills/ai-deslop .claude/
 ```
 
 Style is an attribute of every task, not a task itself, so this one will not load on description match. To apply it to every reply, add a line to `.claude/CLAUDE.md` pointing at `.claude/skills/ai-deslop/SKILL.md`; its [README](plugins/ai-deslop/README.md) has the wording.
+
+---
+
+### mcp-api-integration
+
+Working rules for Figma and Asana over MCP and REST. An OAuth connection writes under your name, so state edits are fine and comments are not.
+
+```bash
+npx degit bumbeishvili/claude-skills/plugins/mcp-api-integration/skills/mcp-api-integration .claude/skills/mcp-api-integration
+```

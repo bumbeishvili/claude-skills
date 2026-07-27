@@ -1,0 +1,9 @@
+{
+  "name": "mcp-api-integration",
+  "description": "Working rules for the Figma MCP server, the Figma REST API and the Asana MCP server: which writes are safe when OAuth attributes them to the signed-in user, how to parse Figma file keys and node ids, which interface to reach for, how OAuth sessions fail quietly, and how to prove a connection returns real data before relying on it. Includes a playbook of recipes and dependency-free Figma REST clients in TypeScript and Python.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}
