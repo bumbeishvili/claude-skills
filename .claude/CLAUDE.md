@@ -40,9 +40,12 @@ All analytics goes through `$lib/analytics` — never call `posthog` directly. K
 - **Identify / reset**: end-users are identified by email in the layout; `resetAnalytics()` runs on logout. Never identify admins.
 - **Privacy**: no PII or secrets in event props; session replay masks all inputs.
 
-## Figma
+## Skills
 
-- Figma MCP server (`figma-remote-mcp`) is available and authenticated via OAuth
-- If authentication expires, re-authorize by calling `mcp__figma-remote-mcp__authenticate` — user will need to open the returned URL in their browser
-- Extract `fileKey` and `nodeId` from Figma URLs: `figma.com/design/:fileKey/:fileName?node-id=:nodeId` (convert `-` to `:` in nodeId)
-- Use `get_design_context` as the primary tool for reading designs, `get_metadata` for structure overview, `get_screenshot` for visual verification
+Installed under `.claude/skills/`. Most load themselves when the task matches their description; these notes cover what description-matching misses.
+
+- **ai-deslop** — writing style is not a task, so this one never self-triggers. Follow `.claude/skills/ai-deslop/SKILL.md` for all prose: chat replies, docs, commits, PR descriptions, code comments.
+- **mcp-api-integration** — Figma and Asana, over MCP or REST. It owns those rules, including the Figma tool namespace, node-id parsing and which Asana writes are safe. Prefer it over Figma or Asana guidance restated anywhere else.
+- **playwright-repro** — any browser bug or UI verification. Reproduce in a script before diagnosing, re-run the same script to prove the fix.
+- **d3-charts** — read before writing D3 chart code.
+- **light-cms** — the git-backed SvelteKit CMS.

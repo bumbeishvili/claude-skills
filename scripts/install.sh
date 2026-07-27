@@ -24,7 +24,7 @@ command -v curl >/dev/null || { echo "curl is required" >&2; exit 1; }
 # Check every remote file resolves before writing anything, so a missing one
 # cannot leave a half-installed .claude behind.
 missing=""
-for u in "$RAW/.claude/CLAUDE.md" "$RAW/templates/settings.local.json"; do
+for u in "$RAW/.claude/CLAUDE.md" "$RAW/.claude/ABOUT.md" "$RAW/templates/settings.local.json"; do
   curl -fsIL -o /dev/null "$u" 2>/dev/null || missing="$missing  $u"
 done
 if [ -n "$missing" ]; then
@@ -62,7 +62,8 @@ fetch() {
   curl -fsSL "$url" -o "$dest"
   printf '  added    %s\n' "$label"
 }
-fetch "$RAW/.claude/CLAUDE.md"                .claude/CLAUDE.md          CLAUDE.md
+fetch "$RAW/.claude/CLAUDE.md"                .claude/CLAUDE.md           CLAUDE.md
+fetch "$RAW/.claude/ABOUT.md"                 .claude/ABOUT.md            ABOUT.md
 fetch "$RAW/templates/settings.local.json"    .claude/settings.local.json settings.local.json
 
 echo

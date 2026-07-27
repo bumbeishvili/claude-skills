@@ -4,7 +4,7 @@
     "name": "David Bumbeishvili",
     "email": "me@davidb.dev"
   },
-  "description": "Reusable Claude Code skills by infogr8 — packaged as per-skill plugins so a project installs only what it needs.",
+  "description": "Reusable Claude Code skills, packaged as per-skill plugins so a project installs only what it needs.",
   "plugins": [
     {
       "name": "d3-charts",
