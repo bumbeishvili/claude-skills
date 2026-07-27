@@ -1,6 +1,14 @@
 # claude-skills
 
-Reusable [Claude Code](https://code.claude.com) skills. Each command below copies a skill into `.claude/skills/` (needs `npx`). A skill loads when the task matches its description, or on `/<skill>`.
+[Claude Code](https://code.claude.com) skills. Install all of them, plus `CLAUDE.md` and `settings.local.json`, into the current project:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | bash
+```
+
+Existing files are kept; `| FORCE=1 bash` replaces them, with backups. `settings.local.json` grants `Bash(*)`.
+
+Or one at a time:
 
 ---
 
