@@ -12,7 +12,7 @@ Or one at a time:
 
 ---
 
-### d3-charts
+### [d3-charts](plugins/d3-charts/)
 
 D3.js chart convention — responsive, updatable, no duplicate-element re-render bug.
 
@@ -22,7 +22,7 @@ npx degit bumbeishvili/claude-skills/plugins/d3-charts/skills/d3-charts .claude/
 
 ---
 
-### light-cms
+### [light-cms](plugins/light-cms/)
 
 Git-backed CMS for SvelteKit + Vercel. No database.
 
@@ -32,7 +32,7 @@ npx degit bumbeishvili/claude-skills/plugins/light-cms/skills/light-cms .claude/
 
 ---
 
-### playwright-repro
+### [playwright-repro](plugins/playwright-repro/)
 
 Fix web bugs with throwaway Playwright scripts — reproduce first, measure against ground truth, then prove the fix.
 
@@ -42,7 +42,7 @@ npx degit bumbeishvili/claude-skills/plugins/playwright-repro/skills/playwright-
 
 ---
 
-### ai-deslop
+### [ai-deslop](plugins/ai-deslop/)
 
 Strip the AI tells from prose — numbers you measured, claims a reader can check. Separate rules for human-facing writing and for files a model reads.
 
@@ -54,7 +54,7 @@ Style is an attribute of every task, not a task itself, so this one will not loa
 
 ---
 
-### mcp-api-integration
+### [mcp-api-integration](plugins/mcp-api-integration/)
 
 Working rules for Figma and Asana over MCP and REST. An OAuth connection writes under your name, so state edits are fine and comments are not.
 
@@ -64,7 +64,7 @@ npx degit bumbeishvili/claude-skills/plugins/mcp-api-integration/skills/mcp-api-
 
 ---
 
-### data-debug
+### [data-debug](plugins/data-debug/)
 
 Check a page's numbers against their source. Tag each figure with a `data-calc` formula, then add `#debug` to the URL to read it back in the browser.
 
