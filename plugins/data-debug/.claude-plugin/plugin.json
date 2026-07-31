@@ -1,0 +1,9 @@
+{
+  "name": "data-debug",
+  "description": "Tag a data-driven UI element with a `data-calc` attribute in file.column dot notation, then add `#debug` to the URL to check it in the browser: each tagged element gets a ƒx badge whose hover shows the source columns and arithmetic behind the number. Ships a framework-agnostic vanilla overlay and a Svelte component.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

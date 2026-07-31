@@ -61,3 +61,13 @@ Working rules for Figma and Asana over MCP and REST. An OAuth connection writes 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/mcp-api-integration/skills/mcp-api-integration .claude/skills/mcp-api-integration
 ```
+
+---
+
+### data-debug
+
+Check a page's numbers against their source. Tag each figure with a `data-calc` formula, then add `#debug` to the URL to read it back in the browser.
+
+```bash
+npx degit bumbeishvili/claude-skills/plugins/data-debug/skills/data-debug .claude/skills/data-debug
+```

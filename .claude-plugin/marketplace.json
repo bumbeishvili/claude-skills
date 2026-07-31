@@ -25,6 +25,10 @@
     {
       "name": "mcp-api-integration",
       "source": "./plugins/mcp-api-integration"
+    },
+    {
+      "name": "data-debug",
+      "source": "./plugins/data-debug"
     }
   ]
 }
