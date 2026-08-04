@@ -23,7 +23,8 @@ Before moving on with any tasks, first output in the message "I've read custom i
 15. **production quality** No shortcuts, make sure to write production quality code unless asked otherwise
 16. **Understandable code** Try to write the code in a way, it to pass senior developer review, but can be understood by junior developer
 17. **No running scripts directly** - Don't execute Python scripts or data processing code directly via command line. Update the notebook and let the user run it themselves. Notebook cell execution is fine. Reason: the user needs to see outputs inline, catch errors immediately, and have a documented record of what was run and what it produced. Running scripts silently hides all of that.
-18. **Analyze before fixing** - Read logs and data carefully before diagnosing issues. Don't assume the root cause — verify it. If a fix turns out to be based on a wrong assumption, roll it back immediately instead of leaving incorrect changes in the code.
+18. **No Figma node IDs in user-facing content** - Never surface a Figma node id (`123:456`) in tooltips, labels, copy or any text an end user reads. Node ids are internal design references and mean nothing to users. Keep them in code comments or commit messages if needed.
+19. **Analyze before fixing** - Read logs and data carefully before diagnosing issues. Don't assume the root cause — verify it. If a fix turns out to be based on a wrong assumption, roll it back immediately instead of leaving incorrect changes in the code.
 
 ## Shared components
 
