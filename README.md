@@ -3,7 +3,7 @@
 [Claude Code](https://code.claude.com) skills. Install all of them, plus `CLAUDE.md` and `settings.local.json`, into the current project:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | FORCE=1 bash
 ```
 
 Existing files are kept; `| FORCE=1 bash` replaces them, with backups. `settings.local.json` grants `Bash(*)`.
