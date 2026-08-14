@@ -21,8 +21,9 @@ A **Git-backed CMS where the repo is the single source of truth.** No database.
 - Each managed page is one JSON file in `static/assets/<slug>.json`.
 - An editor edits a **visual mirror** of the page and clicks **Save**.
 - Save `PUT`s the JSON to a server route, which **commits the file to the
-  environment's branch via the GitHub Contents API**, authored as the signed-in
-  editor (token is shared, but git blame shows the real person).
+  environment's branch via the GitHub Contents API**, authored as a fixed
+  site-owner identity; the signed-in editor is named in the commit message
+  (subject `edited by <email>` + `Editor:` body line).
 - Vercel auto-deploys on that push. The editor **polls the commit's deploy
   status** and shows pending → deployed ✓ with a live link.
 - **Preview before save**: the editor stashes the working copy in `localStorage`
@@ -90,8 +91,12 @@ reason this playbook exists.
    `encodeURIComponent(path)` turns slashes into `%2F` and the API 404s. Split on
    `/`, encode each segment, rejoin.
 
-9. **Commit `author` AND `committer` = the signed-in editor.** The token is
-   shared, so without this every commit looks like the bot/token owner.
+9. **Commit `author` AND `committer` = one fixed site-owner identity, with the
+   editor named in the commit message.** Setting them to the signed-in editor
+   scatters `git log` across every editor account; a fixed identity (read from
+   env, e.g. `CMS_COMMIT_AUTHOR_NAME` / `CMS_COMMIT_AUTHOR_EMAIL`, with a
+   hardcoded fallback) keeps history consistent while the subject
+   (`edited by <email>`) and body (`Editor: …`) preserve who actually edited.
 
 10. **Markdown toolbar must match what the site actually styles.** We removed
     bullet / numbered / blockquote / inline-code buttons because no public page
@@ -378,7 +383,8 @@ export async function commitJsonToBranch(args: {
 	if (getRes.ok) sha = ((await getRes.json()) as { sha: string }).sha;
 	else if (getRes.status !== 404) throw new Error(`SHA lookup failed (${getRes.status})`);
 
-	// 2. PUT new content. author+committer = the editor, so git blame is real.
+	// 2. PUT new content. author+committer = the fixed site-owner identity the
+	// caller passes; the editor is named in the message instead.
 	const json = JSON.stringify(args.value, null, '\t') + '\n';
 	const body = {
 		message: args.message,
@@ -402,7 +408,13 @@ export async function commitJsonToBranch(args: {
 
 ```ts
 import { error, json, type RequestHandler } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { commitJsonToBranch, diffTopLevelKeys, tryReadJsonFromBranch } from '$lib/server/cms/github';
+
+// One fixed commit identity keeps git history single-author regardless of which
+// editor saved; the editor is preserved in the commit message below.
+const COMMIT_AUTHOR_NAME = env.CMS_COMMIT_AUTHOR_NAME ?? 'Site Owner';
+const COMMIT_AUTHOR_EMAIL = env.CMS_COMMIT_AUTHOR_EMAIL ?? 'owner@example.com';
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
 	const user = (await locals.auth())?.user;
@@ -416,17 +428,22 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
 		throw error(400, 'Body must be a JSON object');
 
 	const path = `static/assets/${slug}.json`;
-	const author = { name: user.name ?? user.email, email: user.email };
+	const editor = { name: user.name ?? user.email, email: user.email };
 
 	const previous = await tryReadJsonFromBranch<Record<string, unknown>>(path);
 	const changed = diffTopLevelKeys(previous, value as Record<string, unknown>);
 	const message =
-		`cms(${slug}): edited by ${author.email}\n\n` +
-		`Editor: ${author.name} <${author.email}>\nPage:   /${slug}\nSource: ${path}\n` +
+		`cms(${slug}): edited by ${editor.email}\n\n` +
+		`Editor: ${editor.name} <${editor.email}>\nPage:   /${slug}\nSource: ${path}\n` +
 		(changed.length ? `Changed: ${changed.join(', ')}\n` : '');
 
 	try {
-		const { commit } = await commitJsonToBranch({ path, value, message, author });
+		const { commit } = await commitJsonToBranch({
+			path,
+			value,
+			message,
+			author: { name: COMMIT_AUTHOR_NAME, email: COMMIT_AUTHOR_EMAIL }
+		});
 		return json({ ok: true, commit });
 	} catch (e) {
 		throw error(502, e instanceof Error ? e.message : 'Commit failed');
@@ -723,7 +740,7 @@ const SanitizeStoredMarks = Extension.create({
 - [ ] Disallowed Google account is rejected at sign-in (no session issued).
 - [ ] Allowed account reaches `/admin`; unauthenticated hit → redirect to sign-in.
 - [ ] `/api/cms/*` returns 401/403 without a valid allowlisted session.
-- [ ] Save commits to the correct branch; the commit's author is the editor's email.
+- [ ] Save commits to the correct branch; the commit's author is the fixed site-owner identity and the message names the editor (`edited by <email>`).
 - [ ] New-file save (no prior JSON) creates; second save updates (SHA path works).
 - [ ] Editor shows pending → deployed ✓ with a working live link.
 - [ ] Public page renders from **bundled** JSON — confirm zero runtime GitHub

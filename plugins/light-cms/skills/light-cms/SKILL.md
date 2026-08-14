@@ -43,7 +43,7 @@ before writing code. This SKILL.md is the map; the playbook is the territory.
 - `$page.url.origin` is `http://sveltekit-prerender` at build time → hardcode `SITE_URL` for any absolute URL on a prerendered page.
 - GitHub Contents API needs the file's current SHA to update; 404 → omit SHA → it creates.
 - Encode path segments but keep `/` literal, or the API 404s.
-- Commit `author` + `committer` = the signed-in editor (token is shared).
+- Commit `author` + `committer` = one fixed site-owner identity (env-overridable), NOT the signed-in editor — keeps `git log` single-author. The editor is recorded in the commit subject (`edited by <email>`) and body (`Editor: …`) instead.
 - Markdown toolbar must expose only formatting the public CSS styles.
 - Enforce the allowlist in both the Auth.js `signIn` callback and the hooks guard.
 
