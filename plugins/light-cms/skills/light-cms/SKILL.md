@@ -46,6 +46,7 @@ before writing code. This SKILL.md is the map; the playbook is the territory.
 - Commit `author` + `committer` = one fixed site-owner identity (env-overridable), NOT the signed-in editor — keeps `git log` single-author. The editor is recorded in the commit subject (`edited by <email>`) and body (`Editor: …`) instead.
 - Markdown toolbar must expose only formatting the public CSS styles.
 - Enforce the allowlist in both the Auth.js `signIn` callback and the hooks guard.
+- A public admin sign-in form can get the whole domain flagged "deceptive" by Google Safe Browsing — `noindex` the auth/admin/api routes (header + `<meta>`), disallow them in `robots.txt`, add baseline security headers (playbook §2.18 + §7.3).
 
 ## Verify before calling it done (full checklist in playbook §8)
 

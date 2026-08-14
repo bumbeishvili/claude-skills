@@ -133,6 +133,16 @@ reason this playbook exists.
     editor was explicitly out of scope). Don't promise editors self-serve schema
     changes.
 
+18. **A public sign-in form can get the whole domain flagged "deceptive" by Google
+    Safe Browsing.** The admin sign-in page is public and looks like a generic
+    login; Safe Browsing can read that as phishing and show the red interstitial on
+    *every* URL of the domain (especially on a shared preview host). Mitigate before
+    launch: mark the auth/admin/api routes `noindex` (an `X-Robots-Tag` header in
+    hooks — see §7.3 — plus a `<meta name="robots" content="noindex, nofollow">` on
+    the sign-in page), disallow them in `robots.txt` (`/admin`, `/auth`, `/api`),
+    and set the baseline security headers from §7.3 on every response. If already
+    flagged, ship these then request a review in Google Search Console.
+
 ---
 
 ## 3. Dependencies
@@ -277,6 +287,23 @@ const previewHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
+// Baseline security headers on every response — defence-in-depth, and a signal to
+// safe-browsing classifiers that this is a legit, non-deceptive site. Auth/admin/api
+// routes are additionally marked noindex so a bare sign-in form on a shared host
+// isn't crawled and flagged "deceptive" (see §2.18). Pair with robots.txt.
+const securityHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+	response.headers.set('X-Content-Type-Options', 'nosniff');
+	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	response.headers.set('X-Frame-Options', 'DENY');
+	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+	const p = event.url.pathname;
+	if (p.startsWith('/admin') || p.startsWith('/auth') || p.startsWith('/api')) {
+		response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+	}
+	return response;
+};
+
 const guardAdmin: Handle = async ({ event, resolve }) => {
 	const isProtected = PROTECTED_PREFIXES.some((p) => event.url.pathname.startsWith(p));
 	if (!isProtected) return resolve(event);
@@ -292,7 +319,18 @@ const guardAdmin: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = CMS_DEV_PREVIEW ? previewHandle : sequence(authHandle, guardAdmin);
+export const handle: Handle = CMS_DEV_PREVIEW
+	? sequence(securityHeaders, previewHandle)
+	: sequence(securityHeaders, authHandle, guardAdmin);
+```
+
+Companion `static/robots.txt` (keep crawlers off the credential/admin surface):
+
+```
+User-agent: *
+Disallow: /admin
+Disallow: /auth
+Disallow: /api
 ```
 
 ### 7.4 `src/lib/server/cms/github.ts`
