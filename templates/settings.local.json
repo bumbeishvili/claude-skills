@@ -6,7 +6,9 @@
       "Write",
       "Read",
       "Bash(*)",
-      "WebFetch(*)"
+      "WebFetch(*)",
+      "Read(./.env.example)",
+      "Edit(./.env.example)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
