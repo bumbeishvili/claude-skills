@@ -29,6 +29,10 @@
     {
       "name": "data-debug",
       "source": "./plugins/data-debug"
+    },
+    {
+      "name": "project-handover",
+      "source": "./plugins/project-handover"
     }
   ]
 }

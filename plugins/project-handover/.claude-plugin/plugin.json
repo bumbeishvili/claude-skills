@@ -1,0 +1,9 @@
+{
+  "name": "project-handover",
+  "description": "Fill a project handover document in Google Docs from the codebase and its hosting: read the template, gather the facts (timeline from git, stack from the package manifest, URLs and env vars from the hosting CLI, design and data sources, access and testing), draft answers that mark what is unknown, then fill and format the doc through the user's signed-in browser with Playwright and verify it by reading it back. Includes the Docs-automation scripts and the traps.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

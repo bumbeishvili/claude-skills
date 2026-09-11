@@ -71,3 +71,13 @@ Check a page's numbers against their source. Tag each figure with a `data-calc` 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/data-debug/skills/data-debug .claude/skills/data-debug
 ```
+
+---
+
+### [project-handover](plugins/project-handover/)
+
+Fill a project handover Google Doc from the codebase and its hosting — facts from git, the manifest and the hosting CLI, `TBC` where nothing supports a claim, then filled and formatted through the user's own signed-in Chrome.
+
+```bash
+npx degit bumbeishvili/claude-skills/plugins/project-handover/skills/project-handover .claude/skills/project-handover
+```
