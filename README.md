@@ -1,6 +1,6 @@
 # claude-skills
 
-[Claude Code](https://code.claude.com) skills. Install all of them, plus `CLAUDE.md` and `settings.local.json`, into the current project:
+Agent skills for [Claude Code](https://code.claude.com) and for [Codex](https://learn.chatgpt.com/docs/build-skills), the coding agent in ChatGPT. Install all of them, plus the shared instructions in `AGENTS.md` and Claude Code's `settings.local.json`, into the current project:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | FORCE=1 bash
@@ -8,7 +8,19 @@ curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scr
 
 Existing files are kept; `| FORCE=1 bash` replaces them, with backups. `settings.local.json` grants `Bash(*)`.
 
-Or one at a time:
+Both agents end up reading the same files:
+
+| Installed | Read by |
+|---|---|
+| `AGENTS.md` | Codex directly, Claude Code through the `@../AGENTS.md` import in `.claude/CLAUDE.md` |
+| `.claude/skills/<skill>/` | Claude Code |
+| `.agents/skills/<skill>` | Codex. Each entry is a relative link to the folder in `.claude/skills/` |
+
+Or one at a time. Each command below installs a skill for Claude Code; link it for Codex as well with:
+
+```bash
+mkdir -p .agents/skills && ln -s ../../.claude/skills/<skill> .agents/skills/<skill>
+```
 
 ---
 
@@ -50,7 +62,7 @@ Strip the AI tells from prose — numbers you measured, claims a reader can chec
 npx degit bumbeishvili/claude-skills/plugins/ai-deslop/skills/ai-deslop .claude/skills/ai-deslop
 ```
 
-Style is an attribute of every task, not a task itself, so this one will not load on description match. To apply it to every reply, add a line to `.claude/CLAUDE.md` pointing at `.claude/skills/ai-deslop/SKILL.md`; its [README](plugins/ai-deslop/README.md) has the wording.
+Style is an attribute of every task, not a task itself, so this one will not load on description match. To apply it to every reply, add a line to `AGENTS.md` pointing at `.claude/skills/ai-deslop/SKILL.md`; its [README](plugins/ai-deslop/README.md) has the wording.
 
 ---
 
@@ -80,4 +92,15 @@ Fill a project handover Google Doc from the codebase and its hosting — facts f
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/project-handover/skills/project-handover .claude/skills/project-handover
+```
+
+---
+
+### As plugins
+
+The repo is also a plugin marketplace, and both agents read the same `.claude-plugin/marketplace.json`. A plugin installed this way is available in every project on the machine, where the installer above writes into one.
+
+```bash
+claude plugin marketplace add bumbeishvili/claude-skills && claude plugin install d3-charts@claude-skills
+codex plugin marketplace add bumbeishvili/claude-skills && codex plugin add d3-charts@claude-skills
 ```

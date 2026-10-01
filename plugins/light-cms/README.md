@@ -6,9 +6,10 @@ Git-backed CMS for SvelteKit + Vercel. No database.
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/light-cms/skills/light-cms .claude/skills/light-cms
+mkdir -p .agents/skills && ln -s ../../.claude/skills/light-cms .agents/skills/light-cms
 ```
 
-Needs `npx`. The skill auto-activates on matching tasks, or invoke it manually with `/light-cms`.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. The skill auto-activates on matching tasks, or invoke it manually with `/light-cms` in Claude Code or `$light-cms` in Codex.
 
 ## What's inside
 

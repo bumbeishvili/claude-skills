@@ -6,9 +6,10 @@ Working rules for Figma and Asana, over both MCP and REST.
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/mcp-api-integration/skills/mcp-api-integration .claude/skills/mcp-api-integration
+mkdir -p .agents/skills && ln -s ../../.claude/skills/mcp-api-integration .agents/skills/mcp-api-integration
 ```
 
-Needs `npx`. Invoke with `/mcp-api-integration`, or mention a Figma design or an Asana task.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. Invoke with `/mcp-api-integration` in Claude Code or `$mcp-api-integration` in Codex, or mention a Figma design or an Asana task.
 
 The REST clients read tokens from the environment:
 

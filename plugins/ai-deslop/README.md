@@ -6,17 +6,18 @@ Rules for writing prose without the AI tells.
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/ai-deslop/skills/ai-deslop .claude/skills/ai-deslop
+mkdir -p .agents/skills && ln -s ../../.claude/skills/ai-deslop .agents/skills/ai-deslop
 ```
 
-Needs `npx`. Invoke with `/ai-deslop`, or ask to deslop a file.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. Invoke with `/ai-deslop` in Claude Code or `$ai-deslop` in Codex, or ask to deslop a file.
 
 ### Making it always on
 
 A skill loads when the task matches its description, and writing style is not a task.
 
-Installing the whole plugin handles it. A `SessionStart` hook feeds `hooks/deslop-directive.md` into every session — the substance rules plus the tells that slip in practice, with a pointer to the full file.
+In Claude Code, installing the whole plugin handles it. A `SessionStart` hook feeds `hooks/deslop-directive.md` into every session — the substance rules plus the tells that slip in practice, with a pointer to the full file.
 
-The `degit` command above copies `skills/ai-deslop` only, so a skill-only install has no hook. Add the line yourself:
+The hook is a Claude Code plugin feature, and the `degit` command above copies `skills/ai-deslop` only. For a skill-only install, or in Codex, add the line to `AGENTS.md` yourself:
 
 ```markdown
 When writing any prose — chat replies, docs, commits, PRs, comments — follow `.claude/skills/ai-deslop/SKILL.md`.
@@ -24,7 +25,7 @@ When writing any prose — chat replies, docs, commits, PRs, comments — follow
 
 ## Two rule sets
 
-Human-facing prose takes the full pass. Files a model reads — SKILL.md, CLAUDE.md, specs, prompts — keep their headings, bullets, bold keys and tables, and take the substance and instruction-framing rules only.
+Human-facing prose takes the full pass. Files a model reads — SKILL.md, AGENTS.md, CLAUDE.md, specs, prompts — keep their headings, bullets, bold keys and tables, and take the substance and instruction-framing rules only.
 
 Full rules in `skills/ai-deslop/SKILL.md`, session directive in `hooks/deslop-directive.md`.
 

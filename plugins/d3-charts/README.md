@@ -6,9 +6,10 @@ Reusable D3.js chart convention — responsive, updatable, no duplicate-element 
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/d3-charts/skills/d3-charts .claude/skills/d3-charts
+mkdir -p .agents/skills && ln -s ../../.claude/skills/d3-charts .agents/skills/d3-charts
 ```
 
-Needs `npx`. The skill auto-activates on matching tasks, or invoke it manually with `/d3-charts`.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. The skill auto-activates on matching tasks, or invoke it manually with `/d3-charts` in Claude Code or `$d3-charts` in Codex.
 
 ## What's inside
 

@@ -15,9 +15,10 @@ Check a page's numbers against their source without opening the code. Tag each f
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/data-debug/skills/data-debug .claude/skills/data-debug
+mkdir -p .agents/skills && ln -s ../../.claude/skills/data-debug .agents/skills/data-debug
 ```
 
-Needs `npx`. Invoke with `/data-debug`, or ask to make a chart's numbers traceable.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. Invoke with `/data-debug` in Claude Code or `$data-debug` in Codex, or ask to make a chart's numbers traceable.
 
 ## What it covers
 

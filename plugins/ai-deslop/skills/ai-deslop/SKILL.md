@@ -1,6 +1,6 @@
 ---
 name: ai-deslop
-description: Write prose a skeptical reader can check — numbers you measured and claims you can attribute, in sentences without the padding that gives generated text away. Applies to chat replies, markdown docs, READMEs, commit bodies, PR descriptions and code comments. Branches on audience — a full style pass for human-facing prose, structure-preserving rules for files a model reads (SKILL.md, CLAUDE.md, specs, prompts). Use when writing or editing prose of any kind, when a draft reads as AI-generated, or when asked to deslop, de-AI, or clean up the writing in a file.
+description: Write prose a skeptical reader can check — numbers you measured and claims you can attribute, in sentences without the padding that gives generated text away. Applies to chat replies, markdown docs, READMEs, commit bodies, PR descriptions and code comments. Branches on audience — a full style pass for human-facing prose, structure-preserving rules for files a model reads (SKILL.md, AGENTS.md, CLAUDE.md, specs, prompts). Use when writing or editing prose of any kind, when a draft reads as AI-generated, or when asked to deslop, de-AI, or clean up the writing in a file.
 ---
 
 # ai-deslop
@@ -9,7 +9,7 @@ Two audiences, two rule sets. Decide which one you are writing for before applyi
 
 **Human-facing** — chat replies, READMEs, docs, commit bodies, PR descriptions, code comments. Full pass: Substance, then Style. In comments, match the density and idiom of the surrounding file, and explain why rather than restating the line.
 
-**Model-facing** — SKILL.md, CLAUDE.md, specs, prompt files, anything loaded as context. Apply Substance in full, then the rules in [For files a model reads](#for-files-a-model-reads). Keep the structure; the Style shape rules do not apply.
+**Model-facing** — SKILL.md, AGENTS.md, CLAUDE.md, specs, prompt files, anything loaded as context. Apply Substance in full, then the rules in [For files a model reads](#for-files-a-model-reads). Keep the structure; the Style shape rules do not apply.
 
 ## Substance
 

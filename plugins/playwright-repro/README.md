@@ -6,9 +6,10 @@ Fix web bugs with throwaway Playwright scripts — reproduce first, measure agai
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/playwright-repro/skills/playwright-repro .claude/skills/playwright-repro
+mkdir -p .agents/skills && ln -s ../../.claude/skills/playwright-repro .agents/skills/playwright-repro
 ```
 
-Needs `npx`. Invoke with `/playwright-repro`, or describe a browser bug.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. Invoke with `/playwright-repro` in Claude Code or `$playwright-repro` in Codex, or describe a browser bug.
 
 Playwright itself, globally, once per machine:
 

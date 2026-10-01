@@ -6,9 +6,10 @@ Fill a project handover Google Doc from the codebase and its hosting — gather 
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/project-handover/skills/project-handover .claude/skills/project-handover
+mkdir -p .agents/skills && ln -s ../../.claude/skills/project-handover .agents/skills/project-handover
 ```
 
-Needs `npx`. Invoke with `/project-handover` and a Google Docs link, or ask to fill in a handover document.
+Needs `npx`. The first line installs the skill for Claude Code, the second links it for Codex. Invoke with `/project-handover` in Claude Code or `$project-handover` in Codex, plus a Google Docs link, or ask to fill in a handover document.
 
 Playwright itself, globally, once per machine:
 

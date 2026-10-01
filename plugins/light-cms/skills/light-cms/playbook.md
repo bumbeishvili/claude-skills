@@ -793,25 +793,29 @@ const SanitizeStoredMarks = Extension.create({
 
 ---
 
-## 9. How to hand this off (Claude Code skill)
+## 9. How to hand this off (agent skill)
 
-This playbook ships as a Claude Code **skill** so the receiving agent
-auto-discovers it and can invoke it by name. Both ends are Claude Code, so use
-the native machinery rather than a loose doc.
+This playbook ships as an agent **skill** so the receiving agent auto-discovers it
+and can invoke it by name. Claude Code and Codex both load skills, so use that
+machinery rather than a loose doc.
 
 1. Copy the whole folder `.claude/skills/light-cms/` (this `playbook.md` plus its
    `SKILL.md`) into the target project's `.claude/skills/`. Claude Code indexes
    skills from `.claude/skills/<name>/SKILL.md` automatically — no registration.
+   Codex indexes `.agents/skills/<name>/SKILL.md`, so link the folder there as well:
+   `mkdir -p .agents/skills && ln -s ../../.claude/skills/light-cms .agents/skills/light-cms`.
 2. The agent then sees `light-cms` in its skills list and invokes it (or you type
-   `/light-cms`). `SKILL.md` is the lean trigger + procedure; it tells the agent
-   to read this `playbook.md` for the full reference code.
-3. Add a one-line pointer in the target project's `CLAUDE.md`, e.g.:
+   `/light-cms` in Claude Code, `$light-cms` in Codex). `SKILL.md` is the lean
+   trigger + procedure; it tells the agent to read this `playbook.md` for the full
+   reference code.
+3. Add a one-line pointer in the target project's `AGENTS.md`, or in its `CLAUDE.md`
+   when it has no `AGENTS.md`, e.g.:
    `- To add CMS-editable content, use the **light-cms** skill (.claude/skills/light-cms/).`
 4. If the agent can reach this repo too, point it here as the live reference
    implementation — playbook + working code together is the strongest transfer.
-5. Optional, if you want hands-off scaffolding: add a project subagent
-   (`.claude/agents/`) whose prompt is "follow the light-cms skill" so it can run
-   the build end-to-end in its own context.
+5. Optional, if you want hands-off scaffolding: add a project subagent (in Claude
+   Code, under `.claude/agents/`) whose prompt is "follow the light-cms skill" so it
+   can run the build end-to-end in its own context.
 
 The two things it must never re-derive the hard way: **public reads bundled JSON
 (never GitHub at runtime)** and **preview is client-side localStorage (never

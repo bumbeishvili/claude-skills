@@ -3,8 +3,13 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/bumbeishvili/claude-skills/main/scripts/install.sh | bash
 #
-# Writes .claude/skills/<skill> for every skill, plus .claude/CLAUDE.md,
-# .claude/ABOUT.md and .claude/settings.local.json, into the directory you run it from.
+# Writes, into the directory you run it from:
+#   AGENTS.md                     the shared instructions, which Codex (ChatGPT) reads directly
+#   .claude/CLAUDE.md             imports AGENTS.md, which is how Claude Code reads them
+#   .claude/skills/<skill>        every skill, where Claude Code looks for them
+#   .agents/skills/<skill>        a link to each skill, where Codex looks for them
+#   .claude/ABOUT.md              project context placeholder
+#   .claude/settings.local.json   Claude Code permissions
 #
 # Anything already there is kept. FORCE=1 replaces it, moving the old copy to
 # <name>.bak-<timestamp> first.
@@ -20,16 +25,16 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 
 # Bounded and retried, so a transient blip does not abort the run and a stalled
 # connection cannot hang forever. The preflight uses tighter limits because it runs
-# three times before any work starts.
+# once per config file before any work starts.
 CURL=(curl -fsSL --connect-timeout 10 --max-time 60 --retry 2 --retry-delay 2)
 CURL_CHECK=(curl -fsSL --connect-timeout 5 --max-time 10 --retry 1 --retry-delay 1)
 
 command -v npx  >/dev/null || { echo "npx is required" >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl is required" >&2; exit 1; }
 
-CFG_NAME=(CLAUDE.md ABOUT.md settings.local.json)
-CFG_URL=("$RAW/.claude/CLAUDE.md" "$RAW/.claude/ABOUT.md" "$RAW/templates/settings.local.json")
-CFG_DEST=(.claude/CLAUDE.md .claude/ABOUT.md .claude/settings.local.json)
+CFG_NAME=(AGENTS.md CLAUDE.md ABOUT.md settings.local.json)
+CFG_URL=("$RAW/AGENTS.md" "$RAW/.claude/CLAUDE.md" "$RAW/.claude/ABOUT.md" "$RAW/templates/settings.local.json")
+CFG_DEST=(AGENTS.md .claude/CLAUDE.md .claude/ABOUT.md .claude/settings.local.json)
 
 # Check every remote file resolves before writing anything, so a missing one cannot
 # leave a half-installed .claude behind.
@@ -58,15 +63,30 @@ can_write() {
   printf '  %-22s backed up to %s.bak-%s\n' "$label" "$(basename "$path")" "$STAMP"
 }
 
-mkdir -p .claude/skills
+mkdir -p .claude/skills .agents/skills
+
+# Codex reads skills from .agents/skills and Claude Code from .claude/skills. The files
+# stay in .claude/skills and .agents/skills gets a relative link to each one, so both
+# agents load the same copy. A link left by an earlier run is pointed again.
+link_for_codex() {
+  local link=".agents/skills/$1"
+  if [ -L "$link" ]; then
+    rm "$link"
+  else
+    can_write "$link" "$1 (.agents)" || return 0
+  fi
+  ln -s "../../.claude/skills/$1" "$link"
+}
 
 echo "skills (first run downloads degit, this takes a moment)"
 for s in $SKILLS; do
-  can_write ".claude/skills/$s" "$s" || continue
-  printf '  %-22s ' "$s"
-  # </dev/null so npx cannot read the script off this pipe when run as curl | bash.
-  npx --yes degit "$REPO/plugins/$s/skills/$s#$BRANCH" ".claude/skills/$s" </dev/null >/dev/null 2>&1 \
-    && echo "ok" || { echo "failed"; exit 1; }
+  if can_write ".claude/skills/$s" "$s"; then
+    printf '  %-22s ' "$s"
+    # </dev/null so npx cannot read the script off this pipe when run as curl | bash.
+    npx --yes degit "$REPO/plugins/$s/skills/$s#$BRANCH" ".claude/skills/$s" </dev/null >/dev/null 2>&1 \
+      && echo "ok" || { echo "failed"; exit 1; }
+  fi
+  link_for_codex "$s"
 done
 
 echo "config"
@@ -77,5 +97,5 @@ for i in "${!CFG_URL[@]}"; do
 done
 
 echo
-echo "done -> $(pwd)/.claude"
+echo "done -> $(pwd): AGENTS.md, .claude/, .agents/skills/"
 echo "settings.local.json grants Bash(*) under acceptEdits — edit it if that is too broad."

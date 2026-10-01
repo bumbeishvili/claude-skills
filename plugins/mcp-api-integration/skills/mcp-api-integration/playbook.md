@@ -6,7 +6,7 @@ Recipes for the Figma MCP server, the Figma REST API and the Asana MCP server.
 
 ## 1. Server configuration
 
-Both servers are HTTP transport with OAuth. In `~/.claude.json` under the project, or in a project `.mcp.json`:
+Both servers are HTTP transport with OAuth. In Claude Code, in `~/.claude.json` under the project, or in a project `.mcp.json`:
 
 ```json
 {
@@ -20,6 +20,22 @@ Both servers are HTTP transport with OAuth. In `~/.claude.json` under the projec
   }
 }
 ```
+
+In Codex, in `~/.codex/config.toml`, or in `.codex/config.toml` for a trusted project:
+
+```toml
+[mcp_servers.figma-remote-mcp]
+url = "https://mcp.figma.com/mcp"
+
+[mcp_servers.asana]
+url = "https://mcp.asana.com/v2/mcp"
+
+[mcp_servers.asana.oauth]
+client_id = "<client-id>"
+callback_port = 8080
+```
+
+Then sign in to each server with `codex mcp login <name>`.
 
 Confirm port 8080 is free before authenticating Asana:
 
@@ -143,7 +159,9 @@ Symptoms come in this order: a tool that worked before returns empty, then retur
 mcp__figma-remote-mcp__authenticate
 ```
 
-Returns a URL the user opens in a browser. It cannot complete without them, so a scheduled or headless run has to fail loudly rather than retry.
+That is the Claude Code tool. In Codex, run `codex mcp login figma-remote-mcp` in a shell.
+
+Either one needs the user to finish the sign-in in a browser. It cannot complete without them, so a scheduled or headless run has to fail loudly rather than retry.
 
 Before a long unattended job, make one cheap read and confirm real data comes back.
 

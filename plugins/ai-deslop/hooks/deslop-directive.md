@@ -16,5 +16,5 @@ Style:
 - End on the operational point. A short profound-sounding closer reads as a summary while adding nothing.
 - Use "is" instead of "serves as", "represents" or "stands as".
 
-Structure in files a model reads — SKILL.md, CLAUDE.md, specs — stays: headings, bullets,
-bold keys, tables. Apply the substance rules there and frame instructions positively.
+Structure in files a model reads — SKILL.md, AGENTS.md, CLAUDE.md, specs — stays: headings,
+bullets, bold keys, tables. Apply the substance rules there and frame instructions positively.

@@ -38,7 +38,7 @@ recollection.
 | Timeline, activity | git history | `git log --reverse --format=%ad --date=short \| head -1`; `git log -1 --format=%ad --date=short`; `git rev-list --count HEAD` |
 | Stack, versions | package manifest + lockfile | `package.json` scripts and dependencies; `node -p "require('./node_modules/<pkg>/package.json').version"` |
 | Structure | source tree | `ls src/routes src/lib` (or the framework's equivalents); one line per top-level area |
-| Existing docs | repo root | `README.md`, `.env.example`, notebooks, `.claude/CLAUDE.md`, any `docs/` |
+| Existing docs | repo root | `README.md`, `.env.example`, notebooks, `AGENTS.md`, `.claude/CLAUDE.md`, any `docs/` |
 | Live, staging, preview URLs (mandatory) | hosting CLI, the user | Vercel: `vercel inspect <prod-url>` (aliases), `vercel alias ls --scope <team>`, `vercel ls <project>`; Netlify: `netlify sites:list`, `netlify status`; if the CLI is not linked, ask the user |
 | Hosting account, team, project | hosting CLI | `vercel whoami`, `vercel project ls`; the team slug appears in preview hostnames |
 | Env var names (never values) | hosting CLI + example file | `vercel env ls production` (names, created age); `.env.example` |
