@@ -1,6 +1,6 @@
 ---
 name: playwright-repro
-description: Reproduce, diagnose, fix and verify web bugs using throwaway Playwright scripts — write a script that makes the bug happen before touching any code, measure real values against ground truth instead of assuming, apply the smallest fix, then re-run the same script to prove it. Use whenever a user reports a bug in a running web app, asks "why is X happening in the browser", asks you to verify a UI change actually works, or when you are about to claim something is fixed without having seen it fixed. Covers auth reuse, console/network capture, reading in-page state, pixel checks, and the measurement traps that make a script lie to you. Start from template.cjs; playbook.md has the recipes.
+description: Reproduce, diagnose, fix and verify web bugs using throwaway Playwright scripts — write a script that makes the bug happen before touching any code, measure real values against ground truth instead of assuming, apply the smallest fix, then re-run the same script to prove it. Use whenever a user reports a bug in a running web app or hands over a round of feedback on one, asks "why is X happening in the browser", asks you to verify a UI change actually works, or when you are about to claim something is fixed without having seen it fixed. Covers auth reuse, console/network capture, reading in-page state, pixel checks, the measurement traps that make a script lie to you, and the before/after report that ends a batch of bugs. Start from template.cjs; playbook.md has the recipes.
 ---
 # Playwright Repro
 
@@ -12,7 +12,7 @@ nothing here gets committed.
 scratch directory. It already wires up console/error/network capture, auth reuse,
 and artifact output — you only write the part that reproduces the bug.
 
-- **[`playbook.md`](playbook.md)** — the recipes: auth, waiting, reading state, measuring, soak loops, ground truth.
+- **[`playbook.md`](playbook.md)** — the recipes: auth, waiting, reading state, measuring, soak loops, ground truth, batch report.
 
 ## The loop
 
@@ -89,3 +89,54 @@ State what you ran, what you observed, and what remains unverified:
 
 Name the parts you could not reproduce. An explicit "unverified" tells the reader what
 still needs checking; leaving it out reads as verified.
+
+## Reporting a batch
+
+One bug is reported as in the section above. Two or more — a list of feedback items, a
+QA round, several tickets — end with a report file instead: `_raw/report.md` at the
+project root, with its screenshots in `_raw/report/`. Create `_raw/` when the project
+has none. The file is a Markdown list. Each piece of feedback is one list item with
+these four entries and no others:
+
+```markdown
+- **Feedback:** the reporter's words
+  - **Before:** ![Before](report/<script>-before.png)
+  - **After:** ![After](report/<script>-after.png)
+  - **Notes:**
+```
+
+- **Feedback** — the reporter's words, verbatim: pasted as they arrived, typos and
+  original language included.
+- **Before** — screenshot from the repro script while the bug still reproduces, the
+  issue circled in red pencil.
+- **After** — screenshot from the same script after the fix, the fixed spot circled in
+  red pencil.
+- **Notes** — empty, unless the reader has to know something the two screenshots cannot
+  show.
+
+The Before screenshot can only be taken until the fix lands, so the report is filled in
+during the loop:
+
+- **Before the first fix**, write one list item per piece of feedback: Feedback pasted
+  in verbatim, the other three entries empty. When `_raw/report.md` already holds items
+  from an earlier batch, add the new ones below them.
+- **Loop step 1, reproduce** — call `reportShot(page, target)` in the script at the
+  point where the bug is on screen, and run it with
+  `REPORT_DIR=<project>/_raw/report PHASE=before`.
+- **Loop step 4, re-verify** — re-run the same script with the same `REPORT_DIR` and
+  `PHASE=after`, then put both screenshots in the list item.
+- **Loop step 5, clean up** — the scripts and scratch artifacts go; `_raw/report.md`
+  and `_raw/report/` stay in the project. Give the user the path to the report.
+
+Every piece of feedback gets a list item. One that never reproduced has an empty
+Before, one left unfixed has an empty After, and both get a note.
+
+**Notes stays empty when the two screenshots tell the whole story.** How the fix works
+is in the diff. Write one line when:
+
+- the item is unfixed or partly fixed — what remains, and why;
+- the bug did not reproduce — what you tried, and what you need to try again (rule 1);
+- the reader has to act or decide — a deploy step, a config value, a product decision;
+- the fix changes something the feedback did not ask about.
+
+The escaping that keeps Feedback verbatim and the two run commands are in playbook §10.

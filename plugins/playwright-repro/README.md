@@ -26,4 +26,6 @@ NODE_PATH="$(npm root -g)" node repro.cjs
 
 The loop, the four rules and the practices are in `skills/playwright-repro/SKILL.md`. Start an investigation by copying `template.cjs`; `playbook.md` has the recipes for auth, waiting, reading state, measuring, ground truth and soak loops.
 
+A batch of bugs ends with a report: `_raw/report.md` in the project, a list with one item per piece of feedback. Each item has the feedback verbatim, a before and an after screenshot with the spot circled in red, and a notes entry that stays empty unless the reader has to know something the screenshots cannot show.
+
 Part of [claude-skills](../../).

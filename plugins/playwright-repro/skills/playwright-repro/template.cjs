@@ -18,7 +18,17 @@ const CONFIG = {
   storageState: path.join(__dirname, 'auth.json'),
   // Set to enable auth reuse: { path, user, pass, userSelector, passSelector, submitName } — delete auth.json to re-authenticate.
   login: null,
+  // Batch report only: REPORT_DIR is the project's _raw/report folder, where the report screenshots go.
+  reportDir: process.env.REPORT_DIR,
+  // Batch report only: PHASE=before while the bug still reproduces, PHASE=after on the re-run that verifies the fix.
+  phase: process.env.PHASE,
 };
+
+const PHASES = ['before', 'after'];
+// The red pencil for report screenshots: a loop `pad` px outside the target whose tail runs `overlap`
+// radians past its own start and drifts `drift` px outward, like a circle drawn by hand.
+// `start` and `start + overlap` both sit on the top-left corner (-π to -π/2), where the two ends cross.
+const PENCIL = { color: '#ff0000', width: 7, pad: 10, start: -2.6, overlap: 0.9, drift: 11, steps: 120 };
 
 const log = (...a) => console.log(...a);
 const problems = [];
@@ -61,9 +71,9 @@ async function authenticate(browser) {
   return storageState;
 }
 
-async function shot(page, name) {
-  fs.mkdirSync(CONFIG.artifacts, { recursive: true });
-  const file = path.join(CONFIG.artifacts, `${name}.png`);
+async function shot(page, name, dir = CONFIG.artifacts) {
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${name}.png`);
   await page.screenshot({ path: file, fullPage: false });
   log(`shot: ${file}`);
   return file;
@@ -74,6 +84,56 @@ function dump(name, data) {
   const file = path.join(CONFIG.artifacts, `${name}.json`);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
   log(`dump: ${file}`);
+}
+
+// Circle the target (a locator) in red pencil. Returns a handle to the mark, so the caller can remove it.
+async function mark(page, target) {
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  return page.evaluateHandle(({ box, pencil }) => {
+    // Keep the loop inside the viewport, so a target that touches an edge still gets a whole circle.
+    const margin = pencil.pad + pencil.drift + pencil.width;
+    const left = Math.max(box.x, margin);
+    const top = Math.max(box.y, margin);
+    const right = Math.min(box.x + box.width, document.documentElement.clientWidth - margin);
+    const bottom = Math.min(box.y + box.height, document.documentElement.clientHeight - margin);
+    const halfWidth = (right - left) / 2;
+    const halfHeight = (bottom - top) / 2;
+    // Rounder corners where the target has room for them, capped so its own corners stay inside the loop.
+    const inset = Math.min(2 * pencil.pad, halfWidth, halfHeight);
+    const fullTurn = 2 * Math.PI;
+    const points = Array.from({ length: pencil.steps + 1 }, (_, i) => {
+      const travelled = (i / pencil.steps) * (fullTurn + pencil.overlap);
+      const angle = pencil.start + travelled;
+      // The loop keeps its distance all the way round; only the tail past the start drifts outward.
+      const radius = pencil.pad + inset + pencil.drift * Math.max(0, travelled - fullTurn) / pencil.overlap;
+      const x = left + halfWidth + Math.sign(Math.cos(angle)) * (halfWidth - inset) + radius * Math.cos(angle);
+      const y = top + halfHeight + Math.sign(Math.sin(angle)) * (halfHeight - inset) + radius * Math.sin(angle);
+      return `${x},${y}`;
+    });
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483647';
+    const loop = document.createElementNS(NS, 'path');
+    loop.setAttribute('d', `M${points.join('L')}`);
+    // Inline styles, because a page stylesheet that styles every path would win over presentation attributes.
+    loop.style.cssText = `fill:none;stroke:${pencil.color};stroke-width:${pencil.width}px;stroke-linecap:round;stroke-linejoin:round`;
+    svg.appendChild(loop);
+    document.body.appendChild(svg);
+    return svg;
+  }, { box, pencil: PENCIL });
+}
+
+// The Before/After screenshot for the batch report: the target circled, saved as <script>-<phase>.png in the report folder.
+async function reportShot(page, target) {
+  const { reportDir, phase } = CONFIG;
+  if (!reportDir || !PHASES.includes(phase)) {
+    throw new Error(`reportShot needs REPORT_DIR=<project>/_raw/report and PHASE=before or PHASE=after, got REPORT_DIR=${reportDir} PHASE=${phase}`);
+  }
+  const circle = await mark(page, target);
+  const file = await shot(page, `${path.basename(__filename, '.cjs')}-${phase}`, reportDir);
+  await circle.evaluate((svg) => svg.remove());
+  return file;
 }
 
 // Everything specific to the bug goes here. Return the observation, do not judge it.
@@ -87,6 +147,7 @@ async function reproduce(page) {
   }));
 
   await shot(page, 'state');
+  // In a batch, call reportShot(page, <locator of the issue>) here too (SKILL.md "Reporting a batch").
   return observed;
 }
 

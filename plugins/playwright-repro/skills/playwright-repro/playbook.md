@@ -304,7 +304,73 @@ object its owner had already destroyed.
 
 ---
 
-## 10. Finishing
+## 10. Batch report
+
+Two or more bugs end with `_raw/report.md` in the project: a list with one item per
+piece of feedback, each carrying four entries — Feedback, Before, After, Notes. What
+goes in each entry, and when Notes is filled, is in SKILL.md under "Reporting a batch".
+The Before screenshot exists only while the bug does, so fill the report in as you go.
+
+**Write the list items before the first fix.** Feedback filled, the other three entries
+empty:
+
+```markdown
+- **Feedback:** South region total shows \$0, should be the real number!!
+  - **Before:**
+  - **After:**
+  - **Notes:**
+- **Feedback:** where did the Export button go?
+  - **Before:**
+  - **After:**
+  - **Notes:**
+```
+
+The Feedback entry has to show the reporter's exact characters, so escape what Markdown
+would otherwise read as syntax: `<br>` for a line break, and a backslash before `*`,
+`_`, `` ` ``, `<`, `[`, `~` and `$`.
+
+**Take both screenshots with `reportShot`.** Each piece of feedback gets its own script.
+In its `reproduce()`, at the point where the bug is on screen:
+
+```js
+await reportShot(page, page.getByRole('row', { name: 'South' }).getByRole('cell').last());
+```
+
+`reportShot` circles the locator in red pencil, saves `<script>-<phase>.png` into
+`REPORT_DIR`, and removes the circle so the rest of the script sees the page as the app
+drew it. The folder and the phase come from the environment, which leaves the file
+identical between the two runs (rule 4 of the skill):
+
+```bash
+REPORT_DIR=<project>/_raw/report PHASE=before NODE_PATH="$(npm root -g)" node south-total.cjs   # the bug reproduces
+REPORT_DIR=<project>/_raw/report PHASE=after  NODE_PATH="$(npm root -g)" node south-total.cjs   # same file, after the fix
+```
+
+`<project>` is the absolute path of the project root. `reportShot` creates `_raw/` and
+`_raw/report/` when they are missing.
+
+- **Circle a locator that matches in both runs** — a role, a label, a test id. A
+  locator built on the broken text stops matching once the text is fixed. When the bug
+  is a missing element, circle the container it belongs in.
+- **Take the Before shot while the bug still reproduces.** After the fix, the only way
+  to get one is to run the script against the pre-fix code again.
+- **Set `REPORT_DIR` and `PHASE` on every run that reaches `reportShot`.** Without them
+  the run stops with an error, so a screenshot is never saved outside the project or
+  under the wrong half of the pair.
+
+**Fill the list item once the fix is verified.** Image paths are relative to
+`report.md`:
+
+```markdown
+- **Feedback:** South region total shows \$0, should be the real number!!
+  - **Before:** ![Before](report/south-total-before.png)
+  - **After:** ![After](report/south-total-after.png)
+  - **Notes:**
+```
+
+---
+
+## 11. Finishing
 
 Before you report anything:
 
@@ -314,6 +380,8 @@ Before you report anything:
 - [ ] You ran the script against an unrelated area and it still behaves.
 - [ ] Console and network are clean, or every remaining message is explained.
 - [ ] You ran the `grep` and every debug hook is removed.
+- [ ] For a batch, `_raw/report.md` has a list item for every piece of feedback, and
+      every image path in it names a file in `_raw/report/` (§10).
 - [ ] Scripts and artifacts are deleted, or live outside the repo.
 - [ ] The report names whatever you could **not** reproduce.
 
