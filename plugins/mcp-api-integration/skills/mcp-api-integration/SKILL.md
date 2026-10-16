@@ -1,6 +1,6 @@
 ---
 name: mcp-api-integration
-description: Working rules for Figma and Asana over MCP and REST — which writes are safe when a connection acts as the signed-in user, which interface to reach for, how OAuth sessions fail quietly, and how to prove a connection returns real data. Covers Figma file key and node id parsing, design-token reads, the Asana board-column move, the ToDo → In Progress → Dev Testing convention, and REST fallbacks for headless runs. Use when reading a Figma design, pulling Figma or Asana data over REST, reading or updating Asana tasks, wiring up either MCP server, or debugging a call that returns nothing.
+description: Working rules for Figma and Asana over MCP and REST — which writes are safe when a connection acts as the signed-in user, which interface to reach for, how OAuth sessions fail quietly, and how to prove a connection returns real data. Covers Figma file key and node id parsing, design-token reads, the Asana board-column move, the ticket convention (numbered tickets with a boxed screenshot of the source, ToDo → In Progress → Dev Testing, an image-only before/after on completion), and REST fallbacks for headless runs. Use when reading a Figma design, pulling Figma or Asana data over REST, turning a brief, client feedback or bug report into Asana tickets, working or closing Asana tasks, wiring up either MCP server, or debugging a call that returns nothing.
 ---
 # MCP & API integration
 
@@ -14,6 +14,7 @@ Figma and Asana, each reachable over MCP or REST. They share one rule.
 **Every connection here acts as the signed-in user.** True of an OAuth MCP server and of a personal REST token, so it holds whichever way you reach Asana.
 
 - **Report blockers in your chat reply.** Comments, messages and replies land under the user's name and read as though they wrote them, so leave `mcp__asana__add_comment` and `POST /tasks/{gid}/stories` alone. The user relays what they want relayed.
+- **Images are the exception.** A ticket's source screenshot and its before/after image go up as attachments with no text. A picture of the work puts no words in the user's mouth (playbook §10).
 - **Change state freely.** Assignment, section moves, custom-field values, type and label changes carry no false voice.
 - If a comment goes out by mistake, delete it rather than leaving it under their name (playbook §6).
 
@@ -40,11 +41,16 @@ Which Figma tool suits which job, and how each one behaves, is playbook §5.
 
 - **Move a task between board columns with `POST /sections/{gid}/addTask`.** A column is a *section*, and moving is not a task-field update. Read section gids from `GET /projects/{gid}/sections`; a guessed gid fails silently.
 - **Request `opt_fields=memberships.section.name`** to learn a task's current column. It is not a top-level field, so the parameter is what makes it appear.
-- **Follow ToDo → In Progress → Dev Testing.** Move to *In Progress* when you start, to *Dev Testing* once the fix is verified. Leave *Done* to the reviewer. One task at a time (playbook §10).
+- **Work tickets by the board convention** (playbook §10, images §11). It applies alike to features, issues and client feedback:
+  - Split the brief, feedback round or bug list into one ticket per item, numbered `NN · Title` from the board's highest number. Attach a screenshot of the source with the item boxed in red, and no comment text.
+  - New tickets go to *ToDo* in number order with a due date. Items nobody has agreed to go to *Backlog*.
+  - Move to *In Progress* when you start, to *Dev Testing* once verified on desktop and phone. Keep every column in number order.
+  - On completion attach one before/after image and no text. Before reproduces the issue, after shows the fix, the area boxed and labelled.
+  - Stop at *Dev Testing*. *To Be Deployed* and *Done* belong to the reviewer, so move tasks there only when asked.
 - **Keep port 8080 free** for the MCP OAuth callback. A process holding it makes authentication fail as though the server were down.
 - Marker.io tickets carry a reproduction URL and a screenshot attachment; the retrieval path is playbook §9.
 
-## Before you rely on a resultwai
+## Before you rely on a result
 
 - **Prove the connection returns real data.** An empty first call means either no matching records or a dead session. Establish which before reporting either.
 - **Re-authenticate when something that worked returns nothing.** An expired session surfaces as empty results or a generic failure rather than as an auth error.

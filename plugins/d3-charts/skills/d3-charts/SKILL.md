@@ -24,7 +24,7 @@ const w = chart.svgWidth();                          // get
 `getState()` / `setState({...})` access the whole object. Auto-managed keys: `svgWidth` (set from container width → responsive), `chartWidth`/`chartHeight` (svg minus margins), `firstRender` (true only on first render — guard declare-once things like zoom), `guiEnabled` (auto lil-gui panel of every numeric/string/boolean attr for client tweaking).
 
 ### 2. `_add()` — enter/exit/update in one call
-**Never use bare `.append()` in a re-runnable render** — it duplicates elements every redraw. Use the prototype helper instead:
+**Add every element through `_add()` in a re-runnable render.** A bare `.append()` duplicates the element on every redraw. The prototype helper:
 ```js
 const g = chart._add('g.wrapper');          // class comes from the selector
 g._add('rect.bar', data);                    // data-bind an array

@@ -15,7 +15,9 @@ class Chart {
             defaultFont: "Helvetica",
             data: null,
             chartWidth: null,
-            chartHeight: null
+            chartHeight: null,
+            firstRender: true,
+            guiEnabled: false
         };
  
         // Defining accessors
@@ -40,11 +42,43 @@ class Chart {
  
  
     render() {
+        this.addChartGui();
         this.setDynamicContainer();
         this.calculateProperties();
         this.drawSvgAndWrappers();
         this.deleteOrReplaceThisMethod();
+        this.setState({ firstRender: false });
         return this;
+    }
+
+    // Optional lil-gui panel for every numeric/string/boolean attr; needs `lil` on the page and guiEnabled = true.
+    addChartGui() {
+        const { guiEnabled, firstRender } = this.getState();
+
+        if (!guiEnabled || !firstRender) return;
+        if (typeof lil == 'undefined') return;
+        const gui = new lil.GUI();
+        gui.close();
+        const state = JSON.parse(JSON.stringify(this.getState()));
+        const propChanged = () => {
+            supportedKeys.forEach((k) => {
+                this.setState({ [k]: state[k] });
+            });
+            this.render();
+        };
+        const supportedKeys = Object.keys(state)
+            .filter(
+                (k) =>
+                    typeof state[k] == 'number' ||
+                    typeof state[k] == 'string' ||
+                    typeof state[k] == 'boolean'
+            )
+            .filter((d) => !['guiEnabled', 'firstRender', 'svgWidth', 'id', 'container'].includes(d));
+        supportedKeys.forEach((key) => {
+            gui.add(state, key).onChange(() => {
+                propChanged();
+            });
+        });
     }
  
     calculateProperties() {

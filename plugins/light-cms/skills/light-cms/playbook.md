@@ -30,7 +30,7 @@ A **Git-backed CMS where the repo is the single source of truth.** No database.
   and opens the public page with a `?_cmsPreview=<token>` URL; the page swaps in
   the unsaved content client-side.
 
-### The single most important design decision: two read paths
+### Two read paths
 
 | | Admin editor reads | Public page reads |
 |---|---|---|
@@ -42,15 +42,13 @@ A **Git-backed CMS where the repo is the single source of truth.** No database.
 mistake. Reasons it's wrong: the Contents API rate limit (5,000/hr per token) is
 shared across *all* visitors, it adds latency to every request, it makes the
 public site depend on a token being valid, and it falls over under traffic. A
-deploy already captures a known content state — serving that state is the whole
-point of deploying.
+deploy already captures a known content state; serve that.
 
 ---
 
 ## 2. Non-obvious constraints & lessons learned
 
-Every item below is a bug we shipped or nearly shipped. This section is the
-reason this playbook exists.
+Every item below is a bug we shipped or nearly shipped.
 
 1. **`csr = dev` silently kills preview in production.** That directive disables
    client JS in prod builds → `onMount` never fires → the localStorage swap never
@@ -114,7 +112,7 @@ reason this playbook exists.
 
 13. **Enforce the allowlist twice.** Once in the Auth.js `signIn` callback (so a
     disallowed account never even gets a session) and again in the hooks guard
-    (defensive, and it's where you 403). Belt and suspenders, cheap.
+    (where the 403 is raised).
 
 14. **Gate `/api/cms` in hooks, not just `/admin`.** The write + status endpoints
     are as sensitive as the UI.
@@ -812,23 +810,23 @@ machinery rather than a loose doc.
    when it has no `AGENTS.md`, e.g.:
    `- To add CMS-editable content, use the **light-cms** skill (.claude/skills/light-cms/).`
 4. If the agent can reach this repo too, point it here as the live reference
-   implementation — playbook + working code together is the strongest transfer.
+   implementation, so it can read the working code next to the playbook.
 5. Optional, if you want hands-off scaffolding: add a project subagent (in Claude
    Code, under `.claude/agents/`) whose prompt is "follow the light-cms skill" so it
    can run the build end-to-end in its own context.
 
 The two things it must never re-derive the hard way: **public reads bundled JSON
 (never GitHub at runtime)** and **preview is client-side localStorage (never
-server-side, never a URL-encoded payload)**. Everything else follows from those.
+server-side, never a URL-encoded payload)**.
 
 ---
 
 ## 10. Local Playwright test (preview only)
 
 Scope: **local Playwright, run by hand after you implement a page** — not CI, not
-a test suite. Test **preview only**. It's the highest-value check, needs no auth,
-and has no side effects. Don't test Save (it commits to the repo + triggers a
-real deploy) and don't test auth (third-party Google OAuth).
+a test suite. Test **preview only**: it needs no auth and has no side effects.
+Don't test Save (it commits to the repo + triggers a real deploy) and don't test
+auth (third-party Google OAuth).
 
 The check, after wiring up a page: it proves CSR is on and `onMount` fires on a
 prerendered/prod page — exactly what `csr = dev` silently breaks. No auth needed

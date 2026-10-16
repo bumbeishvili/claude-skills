@@ -126,14 +126,15 @@ A fixed `await page.waitForTimeout(3000)` is a guess: it passes on your machine,
 on a slower one, and hides the race you are trying to find. The one legitimate use is
 the interval inside a poll loop, below.
 
-For state that lives in memory rather than the DOM, poll it:
+For state that lives in memory rather than the DOM, poll it with the template's
+`until()`:
 
 ```js
-async function until(page, fn, { timeout = 15000, every = 100 } = {}) {
+async function until(page, fn, { timeout = 20000, every = 100 } = {}) {
   const start = Date.now();
   for (;;) {
     if (await page.evaluate(fn)) return true;
-    if (Date.now() - start > timeout) throw new Error(`timed out: ${fn}`);
+    if (Date.now() - start > timeout) throw new Error(`timed out waiting for: ${fn}`);
     await page.waitForTimeout(every);
   }
 }
@@ -220,9 +221,8 @@ const shown = await page.evaluate(() => document.querySelector('.total').textCon
 console.log(JSON.stringify({ truth: truth.total, shown, match: String(truth.total) === shown }));
 ```
 
-This is what separates "the number changed" from "the number is correct". A fix that
-makes the display agree with your assumption, while both disagree with the backend,
-is a bug you have now hidden.
+A fix that makes the display agree with your assumption, while both disagree with
+the backend, is a bug you have now hidden.
 
 ---
 

@@ -25,8 +25,7 @@ and artifact output — you only write the part that reproduces the bug.
 ```
 
 Each step gates the next. Step 1 produces the evidence your theory has to explain, and
-step 4 produces the evidence that the fix worked. Without step 1 you have a theory
-with nothing to explain; without step 4 you have a claim with nothing behind it.
+step 4 produces the evidence that the fix worked.
 
 ## The four rules
 
@@ -41,14 +40,15 @@ and ask for them.
 
 When a script reports something surprising, the script is at least as likely to be
 wrong as the app. **Validate the measuring code against a case with a known answer
-before trusting it on the unknown one.** A measurement bug produces a consistent,
-convincing, entirely fake signal.
+before trusting it on the unknown one.** A measurement bug reports the same wrong
+value on every run, which reads as a stable, real finding.
 
 ### 3. Ground truth comes from outside the app
 
 To check that the app shows the right value, fetch the same value straight from its
 source — the API response, the file, the database — in plain Node, and compare the
-two. Checking the app against your own expectation tests your expectation.
+two. Comparing the app against what you expected only tests the expectation, which
+can be wrong in the same way the app is.
 
 ### 4. Re-run the same script
 

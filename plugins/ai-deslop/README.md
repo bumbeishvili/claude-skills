@@ -33,6 +33,6 @@ Full rules in `skills/ai-deslop/SKILL.md`, session directive in `hooks/deslop-di
 
 Style tells: [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), [The Field Guide to AI Slop](https://www.ignorance.ai/p/the-field-guide-to-ai-slop), [Shaib & Wallace](https://www.khoury.northeastern.edu/ai-slop-is-a-common-online-nuisance-but-what-makes-a-piece-of-text-slop/).
 
-Model-facing rules: prompt format affects instruction-following ([paper](https://www.researchgate.net/publication/385920920_Does_Prompt_Formatting_Have_Any_Impact_on_LLM_Performance)), prohibitions are followed unreliably ([unite.ai](https://www.unite.ai/if-you-tell-ai-not-to-do-something-its-more-likely-to-do-it/), [Swimm](https://swimm.io/blog/understanding-llms-and-negation)), conflicting instructions resolve unpredictably ([ConInstruct](https://arxiv.org/pdf/2511.14342)), agents trust docs over source ([Codified Context](https://arxiv.org/html/2602.20478v1)).
+Model-facing rules: prompt format affects instruction-following ([paper](https://arxiv.org/abs/2411.10541)), prohibitions are followed unreliably ([unite.ai](https://www.unite.ai/if-you-tell-ai-not-to-do-something-its-more-likely-to-do-it/), [Swimm](https://swimm.io/blog/understanding-llms-and-negation)), conflicting instructions resolve unpredictably ([ConInstruct](https://arxiv.org/pdf/2511.14342)), agents trust docs over source ([Codified Context](https://arxiv.org/html/2602.20478v1)).
 
 Part of [claude-skills](../../).

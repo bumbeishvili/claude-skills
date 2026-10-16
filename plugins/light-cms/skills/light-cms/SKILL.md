@@ -11,9 +11,9 @@ the page's JSON to the branch as the editor, triggering a Vercel deploy.
 
 **`playbook.md` (next to this file) is the full as-built reference**: inlined,
 copy-ready code for every module plus the complete lessons-learned list. Read it
-before writing code. This SKILL.md is the map; the playbook is the territory.
+before writing code.
 
-## Two cardinal rules (everything else follows from these)
+## Two rules
 
 1. **Public pages read BUNDLED JSON, never GitHub at runtime.** Public
    `+page.server.ts` does `import bundled from '../../static/assets/<slug>.json'`.
