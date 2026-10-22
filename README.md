@@ -68,7 +68,7 @@ Style is an attribute of every task, not a task itself, so this one will not loa
 
 ### [mcp-api-integration](plugins/mcp-api-integration/)
 
-Working rules for Figma and Asana over MCP and REST. An OAuth connection writes under your name, so state edits are fine and comments are not.
+Working rules for Figma and Asana over MCP and REST. Create tickets before feature work, follow the project's completion workflow, and attach before/after evidence. Connections act as you, so text comments require authorization.
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/mcp-api-integration/skills/mcp-api-integration .claude/skills/mcp-api-integration

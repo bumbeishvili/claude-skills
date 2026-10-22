@@ -1,9 +1,13 @@
 ---
 name: light-cms
-description: Build a lightweight Git-backed CMS into a SvelteKit + Vercel project — Google-auth admin editors, saves that commit content JSON to GitHub via the Contents API, Vercel auto-deploy with status polling, localStorage preview of unsaved edits, and public pages that read bundled JSON (never GitHub at runtime). Use when the user wants editable page content without a database/headless CMS, wants to add an /admin editing UI to a Svelte site, or asks to replicate the "Public Servant Project light CMS". Pairs with the full reference implementation in playbook.md.
+description: Build a lightweight Git-backed CMS into a SvelteKit + Vercel project — Google-auth admin editors, saves that commit content JSON to GitHub via the Contents API, Vercel auto-deploy with status polling, localStorage preview of unsaved edits, and public pages that read bundled JSON (never GitHub at runtime). Use only when the user explicitly requests a Git-backed CMS, including the "Public Servant Project light CMS" pattern. Pairs with the full reference implementation in playbook.md.
 ---
 
 # Light CMS
+
+For a project with an existing CMS, trace the owning content field and follow its
+current content workflow and `AGENTS.md`. A copy fix does not authorize adding
+this CMS, replacing the existing read path, or overriding CMS content in the frontend.
 
 A no-database CMS where **the Git repo is the single source of truth**. Editors
 sign in at `/admin`, edit a visual mirror of each page, and Save — which commits

@@ -2,6 +2,8 @@
 
 Recipes for the Figma MCP server, the Figma REST API and the Asana MCP server.
 
+The active project's `AGENTS.md` governs its workflow, content ownership, authorized writes and verification. These recipes implement that workflow; explicit user instructions take precedence.
+
 ---
 
 ## 1. Server configuration
@@ -15,7 +17,7 @@ Both servers are HTTP transport with OAuth. In Claude Code, in `~/.claude.json` 
     "asana": {
       "type": "http",
       "url": "https://mcp.asana.com/v2/mcp",
-      "oauth": { "clientId": "<client-id>", "callbackPort": 8080 }
+      "oauth": { "clientId": "<client-id>" }
     }
   }
 }
@@ -32,18 +34,11 @@ url = "https://mcp.asana.com/v2/mcp"
 
 [mcp_servers.asana.oauth]
 client_id = "<client-id>"
-callback_port = 8080
 ```
 
 Then sign in to each server with `codex mcp login <name>`.
 
-Confirm port 8080 is free before authenticating Asana:
-
-```bash
-lsof -nP -iTCP:8080 -sTCP:LISTEN
-```
-
-Anything listening there takes the OAuth callback and the flow fails without naming the cause.
+Use the callback configuration supported by the client and the provider's registered redirect URI. If authentication fails because that callback port is occupied, preserve the configured development server and prefer an available REST connection (§9). Do not assume a universal callback port.
 
 ---
 
@@ -136,18 +131,18 @@ MCP read-tool behaviours worth knowing before you call:
 
 ## 6. Asana writes
 
-Allowed, because they change task state:
+Within the ticket work authorized by AGENTS.md or the user:
 
 - assignment
 - section moves
 - custom-field values
 - task type and labels
-- tickets, when the user asks for a brief or feedback round to be split into them: a numbered title and a factual description (what, where, source)
+- ticket creation before agreed feature or fix implementation: follow the board's naming convention and include a factual description (what, where, acceptance criteria, source)
 - image attachments: the source screenshot on a new ticket and the before/after image on a finished one, with no text alongside (§10, §11)
 
-Not allowed, because it attributes them to the user: comments via `mcp__asana__add_comment` (or REST `POST /tasks/{gid}/stories`), and any other call that produces text in the user's voice. The rule holds for a personal REST token too, not only the OAuth MCP server.
+Comments via `mcp__asana__add_comment` or REST `POST /tasks/{gid}/stories` require authorization. Use the requested wording and brevity. A personal REST token also acts as the signed-in user. Respect instructions to leave comments or state unchanged, including code-only rollback requests.
 
-When you hit a blocker — a missing Figma link, an ambiguous spec, an asset that was never attached — write it in your chat reply. The user relays it if they want it on the ticket.
+When you hit a blocker — a missing Figma link, an ambiguous spec, an asset that was never attached — report it in chat. Post it on the ticket only when authorized, using the requested wording.
 
 If you posted a comment by mistake, remove it: `GET /tasks/{gid}/stories` to find the story gid, then `DELETE /stories/{gid}`. You can only delete stories your own token authored.
 
@@ -190,11 +185,11 @@ For the MCP servers, the equivalent is one small read against something you know
 
 The fallback when the MCP server isn't connected — which is the norm in a headless, cron or otherwise non-interactive run, because the MCP OAuth flow needs a browser. A personal access token (Asana → Settings → Apps → Developer → personal access token) sent as a Bearer header needs no callback and works unattended.
 
-Base `https://app.asana.com/api/1.0`. Every write wraps its body in `{ "data": { ... } }`, and every read can trim its payload with `opt_fields`.
+Base `https://app.asana.com/api/1.0`. JSON writes wrap their body in `{ "data": { ... } }`; attachment uploads use multipart form data. Reads can trim their payload with `opt_fields`.
 
 ```
 Authorization: Bearer <personal access token>
-Content-Type: application/json   # writes only
+Content-Type: application/json   # JSON writes only
 ```
 
 | Call | Use |
@@ -202,22 +197,24 @@ Content-Type: application/json   # writes only
 | `GET /users/me` | Cheapest call that proves the token works |
 | `GET /projects/{gid}/sections` | Board columns and their gids — you need these to move tasks |
 | `GET /tasks?project={gid}&opt_fields=name,completed,notes,memberships.section.name,permalink_url&limit=100` | List a project's tasks with their current column |
-| `GET /tasks/{gid}?opt_fields=name,notes,permalink_url` | One task's detail |
+| `GET /tasks/{gid}?opt_fields=name,notes,completed,memberships.project.gid,memberships.section.gid,memberships.section.name,permalink_url` | Task details and completion/section readback |
+| `GET /tasks/{gid}/stories?opt_fields=resource_subtype,text,created_at` | Latest comments and task history; follow pagination |
 | `GET /tasks/{gid}/attachments?opt_fields=name,download_url,view_url` | Attachments; `download_url` is a signed, short-lived asset URL |
 | `POST /sections/{gid}/addTask` `{data:{task}}` | **Move a task into a board column** |
 | `POST /sections/{gid}/addTask` `{data:{task, insert_before}}` | Move and place it above a task already in that column (`insert_after` places it below) |
 | `GET /sections/{gid}/tasks?opt_fields=name` | A column's tasks, top to bottom |
-| `POST /tasks` `{data:{name, html_notes, projects:[gid], due_on}}` | Create a ticket, then place it with `addTask` |
+| `POST /tasks` `{data:{name, html_notes, projects:[gid]}}` | Create a ticket, then place it with `addTask`; add `due_on` only for an agreed date |
 | `POST /attachments` multipart: `parent=<task gid>`, `file=@image.png` | Attach a source screenshot or a before/after image |
-| `PUT /tasks/{gid}` `{data:{completed:true}}` | Complete / reopen |
+| `PUT /tasks/{gid}` `{data:{completed:true}}` | Mark complete; use `completed:false` to reopen within scope |
 | `PUT /tasks/{gid}` `{data:{assignee, custom_fields, ...}}` | Other state changes |
-| `POST /tasks/{gid}/stories` `{data:{text}}` | Comment — **avoid** (identity rule) |
+| `POST /tasks/{gid}/stories` `{data:{text}}` | Post an authorized comment only (§6) |
 | `DELETE /stories/{gid}` | Remove a comment your token authored |
 
 Things that waste time if you don't know them:
 
 - **A board column is a *section*.** Moving a task between columns is `POST /sections/{gid}/addTask` — not a field on the task. There is no `section` field to `PUT`. Section gids aren't guessable; read them from `GET /projects/{gid}/sections` first.
 - **The current column lives in `memberships[].section.name`,** not a top-level field. Ask for it explicitly (`opt_fields=memberships.section.name`) or it won't be in the response.
+- **Section and completion are separate.** Moving to Done does not set `completed`. After both writes, read the task back and check `completed` plus the section in the target project's membership. If either write fails, report the actual state and finish the missing authorized step.
 - **`addTask` with no position puts the task at the top of the column.** To keep a column in number order, pass `insert_before` or `insert_after`. The task you name must already be in that column; one from another column returns 403 `child_object_does_not_exist_in_parent_object`.
 - **Give uploads a timeout.** A multipart upload without one can hang for minutes; 90 seconds is plenty for a screenshot.
 
@@ -237,30 +234,28 @@ See `asana_client.py` for a copy-ready helper covering list / move / complete / 
 
 ## 10. Board convention
 
-A QA board runs its tasks left to right through columns: **List → ToDo → In Progress → Dev Testing → To Be Deployed → Done → Backlog**. Boards differ, so read the sections and map them before moving anything. Features, issues and client feedback all follow the same flow.
+Follow the active project's Asana workflow in `AGENTS.md` or the user's instructions. Confirm the repository and Asana project, read its actual sections and use that board's IDs and ordering convention. Documentation and Git housekeeping do not require feature tickets unless requested.
 
 ### Creating tickets
 
-- **One ticket per item, numbered.** Title `NN · Short title`, continuing from the highest number on the board, so the number leads straight back to the item in the source.
-- **A short, factual description**: what to change, where (files, components), and the source with its date. Quote any copy the client supplied word for word.
-- **Attach a screenshot of the source with the item boxed in red** (§11). Attachment only, no comment text with it.
-- **Put new tickets in ToDo, in number order, with a due date.** Items nobody has agreed to yet go to Backlog, with the reason in the description.
-- Create every ticket before starting work, so the board shows the whole batch.
+- Create one ticket per agreed feature or fix before implementing it, or reuse the existing ticket. Follow the board's naming convention; when it uses `NN · Short title`, continue from its highest number.
+- Record the requested behavior, affected view, acceptance criteria and supplied source links/copy. Attach the relevant source images (§11). Use an agreed due date; do not invent one.
+- Read descriptions, latest comments and relevant attachment images before deciding the scope. Compare the actual view and expected outcome before treating tickets as duplicates; close a duplicate only when authorized, and add a linking comment only when separately authorized.
 
 ### Working a ticket
 
-- **Move it to In Progress the moment you start.** One ticket at a time, so In Progress never fills with half-done work; tickets that change the same lines can move together.
-- **Reproduce first, fix, then prove the fix against the same reproduction.** For a web change that means a throwaway Playwright script run before and after, at desktop width and at phone width (390px), not an assumption. Run axe on the parts you changed. If the [`playwright-repro`](../../../playwright-repro/skills/playwright-repro/SKILL.md) skill is available, use it.
-- **Move to Dev Testing only when the change is made and verified**, not when the edit is written.
+- Move to In Progress when work starts. Work one ticket at a time and continue through an authorized batch without asking permission per ticket.
+- Apply the project's scope and content ownership rules: preserve shared defaults, edit CMS-owned copy through the existing CMS flow, reuse an existing metric's exact definition and source when requested, and use the matching design evidence.
+- Load the available `playwright-repro` skill by its configured location. Capture the original state, implement the scoped change and rerun the same verification. Phone checks are required when separate phone code, layout, responsive behavior or interaction is affected; shared text-only changes need one browser check. Verify distinct affected surfaces, including tables.
+- Recheck comments before closure or rework. Keep blocked or unverified work open and report the precise missing input in chat. Follow AGENTS.md for CMS-only work and explicit instructions to leave board state alone.
 
 ### Completing a ticket
 
-- **Attach one before/after image, with no text** (§11). Before shows the issue reproduced or the old state; after shows the same view fixed, the changed area boxed and labelled. For an issue, the before half is the bug reproduced.
-- **Then move it to Dev Testing.** That is the agent's last column. To Be Deployed and Done belong to the reviewer; move tasks there only when the user asks.
-- **Keep every column ordered.** Active columns run in ascending number order, 01 at the top; place each task with `insert_before`/`insert_after` (§9). Done runs newest first: when asked to move a batch there, add it lowest number first with no position, so the newest ends on top.
-- **A check-only ticket** (nothing needed changing) still gets an image. Label it so it's clear the two halves match on purpose.
-- **Never comment to report progress.** The board columns *are* the status. Blockers, questions and "can't reproduce" go in your chat reply to the user, never on the ticket (identity rule, §6).
-- **Polling for new work** (unattended runs): re-read the ToDo column on an interval; a task's section, not a flag, tells you it's new. Stop when ToDo is empty rather than spinning.
+- After the acceptance criteria pass, attach reviewed before/after evidence (§11), without a routine text comment. A check-only ticket's captions must explain that the captured states match because no change was needed.
+- Use the final state authorized by the project or user. For Done, move with `POST /sections/{doneGid}/addTask`, then set `completed: true` with `PUT /tasks/{taskGid}`. Read back both values using §9; keep the board's ordering convention when positioning the task. If a review stage is required, leave the task incomplete in that stage.
+- Done records verified completion, not deployment. Report deployment separately and satisfy any ticket-specific release requirement before closure.
+- Use board state and attachments for routine progress. Post text comments only when authorized (§6).
+- For an authorized unattended run, re-read the agreed input column and completion state. Stop when its eligible work is exhausted; polling does not expand the authorized scope.
 
 ---
 
@@ -268,17 +263,15 @@ A QA board runs its tasks left to right through columns: **List → ToDo → In 
 
 ### Source screenshot, on a new ticket
 
-- Crop the part of the source that holds the item, with a line or two of context above and below, at a size that reads without zooming.
-- Box every paragraph the ticket covers. An item spread over a page gets several boxes, not one box around its first paragraph.
-- Add a header band naming the ticket and the source, e.g. `Ticket 07 · requests doc, page 3`.
-- For a document, render the page to PNG and locate lines from the PDF text layer (`pdftotext -bbox-layout`) rather than guessing coordinates. Ligatures such as fi and fl drop out of the text layer, so normalise both sides before matching. For a screenshot of a brief, find the text rows by scanning for dark pixels.
+- Preserve supplied source images in full. For a browser capture, scroll to the relevant section and capture the whole viewport at readable resolution; use red rectangles to identify the requested area without obscuring it. Do not add a ticket/title header banner.
+- Mark every relevant area when a ticket covers multiple items. Preserve enough context to identify the page and view.
+- For a document source, render the whole relevant page to PNG. Locate text with the PDF text layer (`pdftotext -bbox-layout`) rather than guessing coordinates; account for ligatures when matching text. Use the supplied image when no original document is available.
 
 ### Before/after image, on a finished ticket
 
-- Capture both halves with the same script, page, view and viewport.
-- If the change is already in the code, put the old version back for a moment, capture the before half, restore the new version, and check the restored file is byte-identical.
-- Box the changed area in red with a short label, and caption the halves BEFORE (grey) and AFTER (green). Several views go in one image as stacked pairs.
-- Add phone-width pairs when the layout changes. Scale retina phone shots down so they sit at a similar size to the desktop ones.
-- Measure boxes from the DOM (`getBoundingClientRect`) instead of reading coordinates off the image.
-- Scroll and clip rather than using `fullPage: true`. A full-page capture resizes the viewport and can leave the page ignoring the next click.
-- Open the finished image and look at it before uploading. Labels must not cover what they point at. Hide sticky overlays such as survey prompts and cookie bars. Check every glyph exists in the label font; an arrow can render as an empty box.
+- Follow the active project's screenshot requirements. Use the same reproduction, route, viewport, filters and scroll location for both states. Wait for data, fonts and chart transitions to settle.
+- Capture with `fullPage: false`, without a `clip`. Preserve the whole viewport at readable resolution; do not crop or resize it to fit a layout. Measure red rectangles from the DOM (`getBoundingClientRect`) and keep them clear of the UI.
+- Put short captions below the screenshots: the before caption explains the issue; the after caption explains the change. Use straight quotes and no ticket/title header banner. Include separate pairs for distinct affected views, such as a chart and its table.
+- Include phone evidence when the change affects separate phone code, layout, responsive behavior or interaction. Shared text-only changes do not need a duplicate phone pair.
+- Capture real states. If a before capture is missing, use the old code in an isolated copy; preserve other work and do not temporarily revert the shared working tree.
+- Open the final image before attaching it. Check that captions and marks are legible and do not cover the evidence. Dismiss incidental overlays consistently when they are not part of the issue, and keep the screenshots out of commits unless requested.

@@ -3,6 +3,10 @@
 Recipes for throwaway browser investigation scripts. Copy what you need into a
 `template.cjs` copy. Everything here runs as a plain script, no test runner.
 
+Use the existing authorized server and set `BASE_URL` to its actual address. Follow
+the active project's `AGENTS.md` for execution permission and verification scope;
+text-only changes shared by desktop and mobile do not need duplicate phone checks.
+
 Install Playwright globally, once per machine:
 
 ```bash
@@ -142,6 +146,7 @@ async function until(page, fn, { timeout = 20000, every = 100 } = {}) {
 
 `networkidle` reports that the network went quiet, which happens before the app has
 finished rendering. Treat it as a hint, then wait on the element or value you care about.
+For visual checks, wait for `document.fonts.ready` and the chart's final state too.
 
 ---
 
@@ -189,13 +194,13 @@ wrong, everything it told you about the real case is void.
 
 Specific traps:
 
-- **Mixed coordinate spaces.** A screenshot is page-space. Values from element APIs
-  are usually element-relative. Comparing the two directly manufactures a constant
-  offset equal to the element's page position, which reads exactly like a real
-  rendering bug. Convert first:
+- **Mixed coordinate spaces.** A viewport screenshot, `getBoundingClientRect()` and
+  Playwright's `boundingBox()` use viewport coordinates. A document offset includes
+  scrolling; a point inside a chart uses chart-local coordinates. Convert before
+  comparing, for example chart-local to viewport:
   ```js
   const box = await page.locator('.chart').boundingBox();
-  const pageX = box.x + localX;
+  const viewportX = box.x + localX;
   ```
 - **Device pixel ratio.** Screenshot pixels may be 2× CSS pixels. Divide before comparing.
 - **Rounding.** A "1px offset" is often two different rounding rules, not a bug.
@@ -231,9 +236,12 @@ the backend, is a bug you have now hidden.
 Screenshot each meaningful state to a named file so you can flip between runs:
 
 ```js
-await page.screenshot({ path: `artifacts/${name}.png` });
-await page.locator('.card').screenshot({ path: `artifacts/${name}-card.png` });
+await page.screenshot({ path: `artifacts/${name}.png`, fullPage: false });
 ```
+
+Use the entire viewport for ticket evidence. Scroll to the responsible area and
+mark it with the template's rectangle helper; a tightly cropped component makes
+the issue harder to locate on the page. Use §10 for captions and before/after pairs.
 
 To check *where* something rendered rather than *that* it rendered, draw the expected
 position into the page and screenshot the result — a wrong overlay is obvious to the
@@ -333,13 +341,22 @@ would otherwise read as syntax: `<br>` for a line break, and a backslash before 
 In its `reproduce()`, at the point where the bug is on screen:
 
 ```js
-await reportShot(page, page.getByRole('row', { name: 'South' }).getByRole('cell').last());
+await reportShot(page, page.getByRole('row', { name: 'South' }).getByRole('cell').last(), {
+  view: 'table',
+  captions: {
+    before: 'The South total shows "$0" despite nonzero source data.',
+    after: 'The South total matches the source data.',
+  },
+});
 ```
 
-`reportShot` circles the locator in red pencil, saves `<script>-<phase>.png` into
-`REPORT_DIR`, and removes the circle so the rest of the script sees the page as the app
-drew it. The folder and the phase come from the environment, which leaves the file
-identical between the two runs (rule 4 of the skill):
+`reportShot` draws a red rectangle around the locator, captures the entire viewport,
+and adds the phase caption below it in a separate image document. It removes the
+rectangle even if capture fails and saves `<script>-<view>-<phase>.png` into
+`REPORT_DIR`; omit `view` for `<script>-<phase>.png`. The caption never covers or
+reflows the app. Use stable view names for chart/table pairs so files do not overwrite
+each other. The folder and phase come from the environment, leaving the script
+identical between runs:
 
 ```bash
 REPORT_DIR=<project>/_raw/report PHASE=before NODE_PATH="$(npm root -g)" node south-total.cjs   # the bug reproduces
@@ -349,11 +366,16 @@ REPORT_DIR=<project>/_raw/report PHASE=after  NODE_PATH="$(npm root -g)" node so
 `<project>` is the absolute path of the project root. `reportShot` creates `_raw/` and
 `_raw/report/` when they are missing.
 
-- **Circle a locator that matches in both runs** — a role, a label, a test id. A
+- **Box a locator that matches in both runs** — a role, a label, a test id. A
   locator built on the broken text stops matching once the text is fixed. When the bug
-  is a missing element, circle the container it belongs in.
+  is a missing element, box the container it belongs in.
 - **Take the Before shot while the bug still reproduces.** After the fix, the only way
-  to get one is to run the script against the pre-fix code again.
+  to get one is to run the script against an isolated copy of the pre-fix code.
+- **Keep the route, filters, scroll position and viewport consistent.** Capture
+  distinct affected views, including data tables. Add phone views only when needed
+  by the change. Use straight quotes, short issue/fix captions and no header banners.
+- **Inspect the finished image before attaching it.** The marked area and its page
+  context must be readable, and the caption must describe what the image shows.
 - **Set `REPORT_DIR` and `PHASE` on every run that reaches `reportShot`.** Without them
   the run stops with an error, so a screenshot is never saved outside the project or
   under the wrong half of the pair.
@@ -363,8 +385,8 @@ REPORT_DIR=<project>/_raw/report PHASE=after  NODE_PATH="$(npm root -g)" node so
 
 ```markdown
 - **Feedback:** South region total shows \$0, should be the real number!!
-  - **Before:** ![Before](report/south-total-before.png)
-  - **After:** ![After](report/south-total-after.png)
+  - **Before:** ![Before](report/south-total-table-before.png)
+  - **After:** ![After](report/south-total-table-after.png)
   - **Notes:**
 ```
 
@@ -377,12 +399,14 @@ Before you report anything:
 - [ ] You watched the bug happen in a **headed** run.
 - [ ] The original script reproduces the bug on the **pre-fix** code.
 - [ ] The **same** script passes on the post-fix code.
-- [ ] You ran the script against an unrelated area and it still behaves.
+- [ ] Other consumers affected by a shared-code change still behave; copy-only
+      edits do not require unrelated page checks.
 - [ ] Console and network are clean, or every remaining message is explained.
 - [ ] You ran the `grep` and every debug hook is removed.
 - [ ] For a batch, `_raw/report.md` has a list item for every piece of feedback, and
       every image path in it names a file in `_raw/report/` (§10).
-- [ ] Scripts and artifacts are deleted, or live outside the repo.
+- [ ] Scratch scripts are deleted or live outside the repo. Retain the report and
+      evidence, excluded from commits unless requested.
 - [ ] The report names whatever you could **not** reproduce.
 
 State the unreproduced parts explicitly. "I could not reproduce the mobile crash, so

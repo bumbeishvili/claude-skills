@@ -20,11 +20,13 @@ export ASANA_TOKEN=<personal access token>   # fallback for when MCP OAuth can't
 
 ## The rule it exists for
 
-An OAuth MCP server, or a personal REST token, acts as the signed-in user. Comments and messages are attributed to them and read as though they wrote them, so those stay off-limits. Assignment changes, section moves and custom-field edits are fine, because they change state instead of speaking. Images are the one exception: a ticket's source screenshot and its before/after evidence go up as attachments with no text.
+An OAuth MCP server or personal REST token acts as the signed-in user. Text comments require authorization and use the requested wording. State changes follow the agreed ticket workflow. Source screenshots and before/after evidence are attached without a routine progress comment.
 
 ## Ticket convention
 
-Features, issues and client feedback all go through the board the same way. Each item becomes a numbered ticket (`NN · Title`) with a screenshot of the source and the item boxed in red. It moves ToDo → In Progress → Dev Testing, and is verified on desktop and phone before Dev Testing. It closes with one before/after image and no comment text. The agent stops at Dev Testing; To Be Deployed and Done belong to the reviewer. Details are in `playbook.md` §10–11.
+Create or reuse the ticket before implementing an agreed feature or fix. Read the latest comments and attachment images, preserve the requested scope, and verify the affected views. Follow the active project's final-state rule: when Done is authorized, move to Done, mark complete, and read back both values; respect any required review stage.
+
+Evidence uses full viewport screenshots, red rectangles and short issue/fix captions below the images. Include affected tables and other distinct views. Add phone checks for separate mobile code or layout/interaction changes; shared copy edits need one browser check. Details are in `skills/mcp-api-integration/playbook.md` §10–11.
 
 ## What's here
 

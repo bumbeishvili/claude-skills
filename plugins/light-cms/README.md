@@ -1,6 +1,6 @@
 # light-cms
 
-Git-backed CMS for SvelteKit + Vercel. No database.
+Git-backed CMS for SvelteKit + Vercel. No database. Use for a requested Git-backed CMS; ordinary copy changes should use the project's existing content source.
 
 ## Install
 

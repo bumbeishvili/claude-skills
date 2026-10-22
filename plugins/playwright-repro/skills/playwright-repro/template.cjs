@@ -25,10 +25,7 @@ const CONFIG = {
 };
 
 const PHASES = ['before', 'after'];
-// The red pencil for report screenshots: a loop `pad` px outside the target whose tail runs `overlap`
-// radians past its own start and drifts `drift` px outward, like a circle drawn by hand.
-// `start` and `start + overlap` both sit on the top-left corner (-π to -π/2), where the two ends cross.
-const PENCIL = { color: '#ff0000', width: 7, pad: 10, start: -2.6, overlap: 0.9, drift: 11, steps: 120 };
+const MARK = { color: '#ff0000', width: 3, pad: 6 };
 
 const log = (...a) => console.log(...a);
 const problems = [];
@@ -86,54 +83,86 @@ function dump(name, data) {
   log(`dump: ${file}`);
 }
 
-// Circle the target (a locator) in red pencil. Returns a handle to the mark, so the caller can remove it.
+// Mark the target without changing app layout. The caller removes the returned SVG.
 async function mark(page, target) {
   await target.scrollIntoViewIfNeeded();
   const box = await target.boundingBox();
-  return page.evaluateHandle(({ box, pencil }) => {
-    // Keep the loop inside the viewport, so a target that touches an edge still gets a whole circle.
-    const margin = pencil.pad + pencil.drift + pencil.width;
-    const left = Math.max(box.x, margin);
-    const top = Math.max(box.y, margin);
-    const right = Math.min(box.x + box.width, document.documentElement.clientWidth - margin);
-    const bottom = Math.min(box.y + box.height, document.documentElement.clientHeight - margin);
-    const halfWidth = (right - left) / 2;
-    const halfHeight = (bottom - top) / 2;
-    // Rounder corners where the target has room for them, capped so its own corners stay inside the loop.
-    const inset = Math.min(2 * pencil.pad, halfWidth, halfHeight);
-    const fullTurn = 2 * Math.PI;
-    const points = Array.from({ length: pencil.steps + 1 }, (_, i) => {
-      const travelled = (i / pencil.steps) * (fullTurn + pencil.overlap);
-      const angle = pencil.start + travelled;
-      // The loop keeps its distance all the way round; only the tail past the start drifts outward.
-      const radius = pencil.pad + inset + pencil.drift * Math.max(0, travelled - fullTurn) / pencil.overlap;
-      const x = left + halfWidth + Math.sign(Math.cos(angle)) * (halfWidth - inset) + radius * Math.cos(angle);
-      const y = top + halfHeight + Math.sign(Math.sin(angle)) * (halfHeight - inset) + radius * Math.sin(angle);
-      return `${x},${y}`;
-    });
+  if (!box || box.width === 0 || box.height === 0) {
+    throw new Error('Screenshot target has no visible area; choose the affected element or its container.');
+  }
+  return page.evaluateHandle(({ box, marker }) => {
+    const inset = marker.width / 2;
+    const left = Math.max(inset, box.x - marker.pad);
+    const top = Math.max(inset, box.y - marker.pad);
+    const right = Math.min(window.innerWidth - inset, box.x + box.width + marker.pad);
+    const bottom = Math.min(window.innerHeight - inset, box.y + box.height + marker.pad);
     const NS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
     svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483647';
-    const loop = document.createElementNS(NS, 'path');
-    loop.setAttribute('d', `M${points.join('L')}`);
-    // Inline styles, because a page stylesheet that styles every path would win over presentation attributes.
-    loop.style.cssText = `fill:none;stroke:${pencil.color};stroke-width:${pencil.width}px;stroke-linecap:round;stroke-linejoin:round`;
-    svg.appendChild(loop);
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', left);
+    rect.setAttribute('y', top);
+    rect.setAttribute('width', right - left);
+    rect.setAttribute('height', bottom - top);
+    rect.style.cssText = `fill:none;stroke:${marker.color};stroke-width:${marker.width}px`;
+    svg.appendChild(rect);
     document.body.appendChild(svg);
     return svg;
-  }, { box, pencil: PENCIL });
+  }, { box, marker: MARK });
 }
 
-// The Before/After screenshot for the batch report: the target circled, saved as <script>-<phase>.png in the report folder.
-async function reportShot(page, target) {
+// Add a caption below the captured viewport in a separate document, keeping the app unchanged.
+async function captionedShot(page, name, caption, dir) {
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('Report screenshots require an explicit viewport size.');
+  const screenshot = await page.screenshot({ fullPage: false });
+  const reportPage = await page.context().newPage();
+  try {
+    await reportPage.setViewportSize(viewport);
+    await reportPage.setContent(`<!doctype html><html><head><style>
+      html, body { margin: 0; background: white; overflow: hidden; }
+      img { display: block; width: 100%; }
+      p { margin: 0; padding: 16px 20px; color: #222; font: 16px/1.5 Arial, sans-serif;
+          white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style></head><body><img alt="Captured application viewport"><p></p></body></html>`);
+    await reportPage.evaluate(async ({ image, text }) => {
+      const img = document.querySelector('img');
+      img.src = image;
+      document.querySelector('p').textContent = text;
+      await img.decode();
+      await document.fonts.ready;
+    }, {
+      image: `data:image/png;base64,${screenshot.toString('base64')}`,
+      text: caption.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"),
+    });
+    const height = await reportPage.locator('body').evaluate(el => Math.ceil(el.getBoundingClientRect().height));
+    await reportPage.setViewportSize({ width: viewport.width, height });
+    return await shot(reportPage, name, dir);
+  } finally {
+    await reportPage.close();
+  }
+}
+
+// Capture each view separately so chart and table evidence cannot overwrite each other.
+async function reportShot(page, target, { captions = {}, view = '' } = {}) {
   const { reportDir, phase } = CONFIG;
   if (!reportDir || !PHASES.includes(phase)) {
     throw new Error(`reportShot needs REPORT_DIR=<project>/_raw/report and PHASE=before or PHASE=after, got REPORT_DIR=${reportDir} PHASE=${phase}`);
   }
-  const circle = await mark(page, target);
-  const file = await shot(page, `${path.basename(__filename, '.cjs')}-${phase}`, reportDir);
-  await circle.evaluate((svg) => svg.remove());
-  return file;
+  const caption = captions[phase];
+  if (typeof caption !== 'string' || !caption.trim()) {
+    throw new Error(`Provide captions.${phase} explaining the original issue or verified change.`);
+  }
+  await page.evaluate(() => document.fonts.ready);
+  const annotation = await mark(page, target);
+  try {
+    const name = [path.basename(__filename, '.cjs'), view, phase].filter(Boolean).join('-');
+    return await captionedShot(page, name, `${phase.toUpperCase()}: ${caption}`, reportDir);
+  } finally {
+    await annotation.evaluate(svg => svg.remove());
+    await annotation.dispose();
+  }
 }
 
 // Everything specific to the bug goes here. Return the observation, do not judge it.
@@ -147,7 +176,7 @@ async function reproduce(page) {
   }));
 
   await shot(page, 'state');
-  // In a batch, call reportShot(page, <locator of the issue>) here too (SKILL.md "Reporting a batch").
+  // In a batch, use reportShot(page, target, { captions: { before: '...', after: '...' }, view: 'chart' }).
   return observed;
 }
 

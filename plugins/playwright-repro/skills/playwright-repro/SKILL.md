@@ -8,6 +8,10 @@ A discipline for browser bug work. You write a `.cjs` file, run it with `node`, 
 something, and delete it. These are throwaway scripts, not a suite you maintain —
 nothing here gets committed.
 
+Follow the active project's `AGENTS.md` for scope, execution permission and
+ticket completion. Use Playwright directly for this workflow; Computer Use is not
+required. Reuse an authorized server and its configured port.
+
 **Start every investigation by copying [`template.cjs`](template.cjs)** into a
 scratch directory. It already wires up console/error/network capture, auth reuse,
 and artifact output — you only write the part that reproduces the bug.
@@ -53,11 +57,19 @@ can be wrong in the same way the app is.
 ### 4. Re-run the same script
 
 Re-run the exact file that produced the failure. It is the only thing that can prove
-the failure is gone. Then run it against an unrelated area to confirm the rest of the
-app still behaves.
+the failure is gone. When shared code changes can affect other consumers, check
+those consumers too. A copy-only edit does not need unrelated page checks.
 
 ## Practices
 
+- **Check the requested surfaces.** Read the latest ticket comments and attachment
+  images before selecting a page, chart or control. A shared copy edit needs one
+  browser check; add phone checks when mobile uses different code or layout,
+  responsive behavior or interaction changes. Include affected data tables and
+  other distinct views in the verification and evidence.
+- **Capture the original state first.** For a feature, use the original page or
+  empty state, then check the acceptance criteria. If a missing before capture
+  requires old code, use an isolated copy; preserve the user's working tree.
 - **Run headed.** Every investigation runs with a visible browser window
   (`headless: false`) so you watch the bug happen. The window shows layout jumps,
   flashes of stale data, swallowed clicks and stuck spinners that a log reporting
@@ -68,13 +80,19 @@ app still behaves.
   module and line; a failed request names the URL and status.
 - **Wait on an observable condition** — `until()`, `waitForSelector`,
   `waitForResponse`. A condition still holds on a slower machine; a fixed sleep passes
-  on yours and hides the race (playbook §3).
+  on yours and hides the race (playbook §3). Wait for relevant data, fonts and chart
+  transitions before measuring or taking screenshots.
 - **Remove every debug hook you add to app source.** `grep` for the hook name before
   you finish, along with `.only`, forced states and hardcoded coordinates (playbook §4).
 - **One script per investigation**, named for the bug.
 - **Keep scripts in a scratch directory outside the repo**, or delete them before you
   finish.
 - **Capture artifacts** (screenshots, JSON dumps) to a folder so you can diff runs.
+- **Keep page context in evidence.** Use full viewport screenshots at the same route,
+  filters, scroll position and viewport before and after. Mark the responsible area
+  with a red rectangle. Put short issue/fix captions below the screenshots, with
+  straight quotes and no title banner; keep annotations clear of the UI. Inspect the
+  finished image before attaching it. No tight crops or full-page captures.
 - **Prefer `getByRole` and visible text over CSS paths.** A selector tied to DOM
   structure breaks on the next refactor and costs the next investigation.
 
@@ -107,10 +125,11 @@ these four entries and no others:
 
 - **Feedback** — the reporter's words, verbatim: pasted as they arrived, typos and
   original language included.
-- **Before** — screenshot from the repro script while the bug still reproduces, the
-  issue circled in red pencil.
-- **After** — screenshot from the same script after the fix, the fixed spot circled in
-  red pencil.
+- **Before** — full viewport from the repro script while the bug still reproduces,
+  the issue boxed in red and explained in a caption below.
+- **After** — the same view after the fix, the changed spot boxed in red and its
+  resulting behavior explained below. Include pairs for affected tables or other
+  distinct views; phone pairs follow the change-specific checks above.
 - **Notes** — empty, unless the reader has to know something the two screenshots cannot
   show.
 
@@ -120,7 +139,7 @@ during the loop:
 - **Before the first fix**, write one list item per piece of feedback: Feedback pasted
   in verbatim, the other three entries empty. When `_raw/report.md` already holds items
   from an earlier batch, add the new ones below them.
-- **Loop step 1, reproduce** — call `reportShot(page, target)` in the script at the
+- **Loop step 1, reproduce** — call `reportShot(page, target, { captions })` in the script at the
   point where the bug is on screen, and run it with
   `REPORT_DIR=<project>/_raw/report PHASE=before`.
 - **Loop step 4, re-verify** — re-run the same script with the same `REPORT_DIR` and
@@ -140,3 +159,7 @@ is in the diff. Write one line when:
 - the fix changes something the feedback did not ask about.
 
 The escaping that keeps Feedback verbatim and the two run commands are in playbook §10.
+
+The local report is separate from the Asana attachment: combine the captioned
+before/after views into one review image, then follow the integration skill for
+uploading it and verifying the ticket's final state.
