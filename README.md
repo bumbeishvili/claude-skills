@@ -96,6 +96,18 @@ npx degit bumbeishvili/claude-skills/plugins/project-handover/skills/project-han
 
 ---
 
+### [explainer-video](plugins/explainer-video/)
+
+Narrated explainer and guide videos of a web app: a cursor driving the real UI, callouts, a browser-window intro, and a local Kokoro voice. 1080p, web-sized MP4.
+
+```bash
+npx degit bumbeishvili/claude-skills/plugins/explainer-video/skills/explainer-video .claude/skills/explainer-video
+```
+
+The voice installs once per machine with `bash .claude/skills/explainer-video/setup.sh` (Apple Silicon Mac); the skill checks for it first.
+
+---
+
 ### As plugins
 
 The repo is also a plugin marketplace, and both agents read the same `.claude-plugin/marketplace.json`. A plugin installed this way is available in every project on the machine, where the installer above writes into one.

@@ -1,0 +1,7 @@
+[
+ { "id": "welcome", "label": "Portal", "text": "This portal manages your site's pages. Every change goes live in one place." },
+ { "id": "create", "label": "New page", "text": "Click New page to start one." },
+ { "id": "fill", "label": "Content", "text": "Give it a title, then set its status to draft while you work." },
+ { "id": "save", "label": "Saved", "text": "Save, and the page is stored with its history." },
+ { "id": "outro", "label": "", "text": "Try this portal for free.", "card": "example.com" }
+]

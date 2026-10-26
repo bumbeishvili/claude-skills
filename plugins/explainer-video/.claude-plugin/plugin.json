@@ -1,0 +1,9 @@
+{
+  "name": "explainer-video",
+  "description": "Narrated explainer and guide videos of a web app: Playwright drives the real UI with a visible cursor, a spotlight and callouts for each part, a browser-window intro with the address, and a local Kokoro 82M voice (af_heart) reading the script. Recorded at 1920x1080 in slow motion for smooth motion, built into a web-sized H.264 MP4, and checked for gaps, silences and layout before anyone watches. Includes the setup check and installer for the local voice, the tour kit, voicing, build and verify scripts, templates, and the traps behind each rule.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

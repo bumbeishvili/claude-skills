@@ -33,6 +33,10 @@
     {
       "name": "project-handover",
       "source": "./plugins/project-handover"
+    },
+    {
+      "name": "explainer-video",
+      "source": "./plugins/explainer-video"
     }
   ]
 }
