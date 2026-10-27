@@ -1,6 +1,6 @@
 {
   "name": "explainer-video",
-  "description": "Narrated explainer and guide videos of a web app: Playwright drives the real UI with a visible cursor, a spotlight and callouts for each part, a browser-window intro with the address, and a local Kokoro 82M voice (af_heart) reading the script. Recorded at 1920x1080 in slow motion for smooth motion, built into a web-sized H.264 MP4, and checked for gaps, silences and layout before anyone watches. Includes the setup check and installer for the local voice, the tour kit, voicing, build and verify scripts, templates, and the traps behind each rule.",
+  "description": "Narrated explainer and guide videos of a web app: Playwright drives the real UI with a visible cursor; a camera zooms on what matters; callouts, a spotlight and marks are drawn on the word that names them; chapters, preview and recap cards, and flowchart, terminal and code scenes explain what the UI cannot; a local Kokoro 82M voice (af_heart) reads the script with captions that follow it word by word. Recorded at 1920x1080 in slow motion for smooth motion and built into a web-sized H.264 MP4 with chapters, captions, a transcript, a poster and an embed page; a dry run also gives a written guide and a click-through walkthrough. The skill says which effects suit which video, and includes the voice setup check and installer, the tour kit, voicing, build and verify scripts, templates, and the traps behind each rule.",
   "author": {
     "name": "David Bumbeishvili",
     "email": "me@davidb.dev"

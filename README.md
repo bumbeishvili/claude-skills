@@ -98,7 +98,7 @@ npx degit bumbeishvili/claude-skills/plugins/project-handover/skills/project-han
 
 ### [explainer-video](plugins/explainer-video/)
 
-Narrated explainer and guide videos of a web app: a cursor driving the real UI, callouts, a browser-window intro, and a local Kokoro voice. 1080p, web-sized MP4.
+Narrated explainer and guide videos of a web app: a cursor driving the real UI, camera zooms, marks drawn on the word that names them, captions, chapters and diagram scenes, voiced locally with Kokoro. 1080p, web-sized MP4, plus a transcript, an embed page and a click-through walkthrough.
 
 ```bash
 npx degit bumbeishvili/claude-skills/plugins/explainer-video/skills/explainer-video .claude/skills/explainer-video

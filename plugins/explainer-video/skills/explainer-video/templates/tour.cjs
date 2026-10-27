@@ -1,5 +1,6 @@
 // A project's tour: copy into the video folder (outside the repo), set APP_URL and the
-// selectors, then one segment per narration line, in narration order.
+// selectors, then one segment per narration line, in narration order. It uses the common
+// pieces only; playbook.md has the rest, and SKILL.md says when each one helps.
 //   node <skill>/voice.cjs <videoDir>
 //   NODE_PATH="$(npm root -g)" node tour.cjs <videoDir> dry     look at <videoDir>/dry/*.png
 //   NODE_PATH="$(npm root -g)" node tour.cjs <videoDir> rec
@@ -15,6 +16,7 @@ record({
   dir: DIR,
   url: APP_URL,
   mode: process.argv[3] || 'dry',
+  callouts: 'label',   // captions carry each line; a callout names the part in two or three words
   // Before the first page: a demo login, made-up data served by route, settings in storage.
   // Never film a real account or real people's data.
   prepare: async (context) => {
@@ -23,22 +25,16 @@ record({
   },
   // Until the app is ready to film: data loaded, spinners gone, fonts in.
   ready: async (page) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main');
+    await page.evaluate(() => document.fonts.ready);
   },
   tour: async (t) => {
-    // The opening: the address typed into a browser bar, the page zooming to full
-    // screen on the word "Every" of the "welcome" line.
-    await t.intro({
-      id: 'welcome', label: 'Portal', address: ADDRESS, zoomAtWord: 'Every',
-      afterZoom: async () => {
-        await t.spot(['main'], 4);
-        await t.retip('welcome', 'Welcome', ['main'], 'inside', 4);
-      },
-    });
+    // The opening: the voice starts at once, the address is typed on "portal" and the page
+    // zooms to full screen on "every", about 2.4 s later (the page has to load first).
+    await t.intro({ id: 'welcome', address: ADDRESS, voiceFirst: true, typeAtWord: 'portal', zoomAtWord: 'every' });
 
     // A click timed to the word that names it; the callout keeps clear of the button.
     await t.segment('create', async () => {
-      await t.tipOff();
       await t.spot(['#new-page-button'], 6);
       await t.say('create', 'New page', ['#new-page-button'], 'right', 6, ['#new-page-button']);
       await t.glideTo('#new-page-button', 600);
@@ -65,12 +61,14 @@ record({
       await t.say('save', 'Saved', ['.toast-saved'], 'bottom', 6);
     });
 
-    // The closing card: the address on screen, not spoken.
+    // The closing card, with the voice over it.
     await t.segment('outro', async () => {
       await t.tipOff();
       await t.spotOff();
-      await t.pause(250);
-      await t.say('outro', '', [], 'center');
+      await t.card({ title: 'Your product', subtitle: ADDRESS });
+      await t.pause(300);
+      await t.speak('outro');
+      await t.pause(1200);
     });
   },
 }).catch((e) => { console.error(e); process.exit(1); });
