@@ -287,6 +287,7 @@ for t in ['every TQQQ day', 'every T Q Q Q day', 'The voice is Kokoro']: print(t
 | An action lands up to 0.9 s off its word | the word's place in the text is not its place in time (numbers are read out in full, commas pause) | Kokoro's own word timings, kept by `voice.cjs` |
 | Overlay restyled (a chat bubble squashed to 32 px) | the app's CSS for a common class (`.user`) reached the overlay | the overlay lives in a shadow root |
 | A zoomed frame 1–3 px short | Chrome snaps the clip to whole pixels | the build scales every frame to the full size (`-reinit_filter 0`) |
+| Blank frames once the page scrolls | the screenshot clip is in page coordinates, so a clip at 0,0 stays above the scrolled viewport | every capture adds the window's scroll offset to its clip |
 | A click does nothing | an invisible element (a toast at opacity 0) sits on top of the target | assert the result of every click the line reports; check `document.elementFromPoint` |
 | Everything magnified 1.5x after a screenshot | Playwright's `page.screenshot` re-sets the device emulation, and the frame loop inherits it | the intro and before/after pictures use Chrome's own capture |
 | The intro's page shows as a 2x2 grid of small copies, sometimes | a clip capture briefly overrides the page's scale; the frame loop and the intro's picture interleaved | every capture goes through one queue |

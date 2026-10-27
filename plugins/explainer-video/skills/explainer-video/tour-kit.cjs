@@ -837,8 +837,14 @@ async function record(options) {
     // One capture at a time: a clip capture briefly overrides the page's scale, and two
     // interleaved ones (the frame loop and the intro's picture) can come back tiled.
     let captureQueue = Promise.resolve(), holdFrames = false;
+    // The clip is in page coordinates, so it moves with the window's scroll; a fixed one
+    // captures the unpainted area above the viewport once the page scrolls (blank frames).
     const captureShot = (params) => {
-      const s = captureQueue.then(() => cdp.send('Page.captureScreenshot', params));
+      const s = captureQueue.then(async () => {
+        const { cssVisualViewport: view } = await cdp.send('Page.getLayoutMetrics');
+        const clip = params.clip && { ...params.clip, x: params.clip.x + view.pageX, y: params.clip.y + view.pageY };
+        return cdp.send('Page.captureScreenshot', { ...params, clip });
+      });
       captureQueue = s.catch(() => {});
       return s;
     };
