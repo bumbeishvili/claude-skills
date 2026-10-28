@@ -1,0 +1,15 @@
+{
+  "name": "accessibility-audit-workspace",
+  "private": true,
+  "description": "Pinned tools for the accessibility-audit skill. setup.sh installs them into A11Y_AUDIT_HOME (default ~/.cache/accessibility-audit); the skill's scripts load them from there.",
+  "dependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@guidepup/guidepup": "0.38.0",
+    "@guidepup/virtual-screen-reader": "0.33.0",
+    "accessibility-checker-engine": "4.0.34",
+    "axe-core": "4.14.0",
+    "esbuild": "0.28.2",
+    "ffmpeg-static": "5.3.0",
+    "playwright": "1.64.1"
+  }
+}

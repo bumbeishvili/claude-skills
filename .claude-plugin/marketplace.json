@@ -37,6 +37,10 @@
     {
       "name": "explainer-video",
       "source": "./plugins/explainer-video"
+    },
+    {
+      "name": "accessibility-audit",
+      "source": "./plugins/accessibility-audit"
     }
   ]
 }

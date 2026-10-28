@@ -1,0 +1,9 @@
+{
+  "name": "accessibility-audit",
+  "description": "Audit and fix a web app against WCAG 2.2 A and AA the way an accessibility review team tests it: axe-core and IBM Equal Access on every page state; a real-keyboard walk that measures focus indicators in pixels, focus order, traps, covered focus and reach, and probes arrow keys in widgets, Enter and Space on custom controls, skip links and popups; a virtual screen reader transcript of every state; contrast, zoom, reflow, text spacing, hover content, motion, target size, linked PDFs and cross-page consistency; and scripted keyboard tasks that check focus, announcements and titles. A headed pass records narrated, captioned walkthroughs in a visible browser, real VoiceOver is driven on macOS, and the skill adds fix recipes, regression-test templates, before/after images and a per-criterion conformance report. A self-test proves every check against planted failures and a page that must come out clean.",
+  "author": {
+    "name": "David Bumbeishvili",
+    "email": "me@davidb.dev"
+  },
+  "homepage": "https://github.com/bumbeishvili/claude-skills"
+}

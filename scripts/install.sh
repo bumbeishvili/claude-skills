@@ -19,7 +19,7 @@ set -euo pipefail
 REPO="${REPO:-bumbeishvili/claude-skills}"
 BRANCH="${BRANCH:-main}"
 RAW="${RAW:-https://raw.githubusercontent.com/$REPO/$BRANCH}"
-SKILLS="ai-deslop d3-charts data-debug explainer-video light-cms mcp-api-integration playwright-repro project-handover"
+SKILLS="accessibility-audit ai-deslop d3-charts data-debug explainer-video light-cms mcp-api-integration playwright-repro project-handover"
 FORCE="${FORCE:-0}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 

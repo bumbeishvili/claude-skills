@@ -108,6 +108,18 @@ The voice installs once per machine with `bash .claude/skills/explainer-video/se
 
 ---
 
+### [accessibility-audit](plugins/accessibility-audit/)
+
+Audit and fix a web app against WCAG 2.2 AA the way a review team tests it: rule engines, a measured keyboard walk, key probes for widgets, a virtual screen reader, contrast, zoom and reflow on every page state; then narrated headed walkthroughs, real VoiceOver, fix recipes, regression tests and a conformance report.
+
+```bash
+npx degit bumbeishvili/claude-skills/plugins/accessibility-audit/skills/accessibility-audit .claude/skills/accessibility-audit
+```
+
+The tools install once per machine with `bash .claude/skills/accessibility-audit/setup.sh`; the skill checks for them first.
+
+---
+
 ### As plugins
 
 The repo is also a plugin marketplace, and both agents read the same `.claude-plugin/marketplace.json`. A plugin installed this way is available in every project on the machine, where the installer above writes into one.
