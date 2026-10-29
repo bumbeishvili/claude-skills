@@ -21,8 +21,8 @@ the project under test gets no new dependencies. Re-running `setup.sh` skips fin
 | ffmpeg-static | narrated walkthrough videos (H.264, AAC, soft captions) |
 
 Optional, reported by `--check`: `pdfinfo` (poppler) for linked PDFs, macOS `say` and `afinfo` for spoken and narrated
-walks, VoiceOver automation (`npx @guidepup/setup setup`, which changes VoiceOver settings and asks for permissions,
-so the person runs it).
+walks, VoiceOver automation (two `npx @guidepup/setup` commands that change VoiceOver settings and ask for
+permissions, so the person runs them; §6).
 
 ## 1. Config reference
 
@@ -42,6 +42,10 @@ A CommonJS module (start from `templates/audit.config.example.cjs`). Paths in st
 | `pages` | paths for the per-page and cross-page checks; default: the states' paths |
 | `flows` | `[{ id, path, viewport?, steps: [{ label, run({ page, keyboard, a11y }), wait?, expect? }] }]` |
 | `flows[].steps[].expect` | `focus` (text or RegExp matched against the focused element's snapshot line, `textbox "Email"`), `focusBody: true` (focus on body intended), `announce` (live-region text), `fieldError` (selector of a field that must be `aria-invalid` with a described error), `title` (document title) |
+| `voFlows` | tasks for `voiceover.cjs --flows`: `[{ id, path, wait?, steps: [{ label, run(helpers), wait?, expect?, shot? }] }]`. `helpers` has `tabTo`, `readTo` and `headingTo` (`(pattern, { max })`, by Tab, VO-Right and VO-Command-H; default max 80), `press(key)`, `type(text)`, `act()`, `next()`, `perform(command)`, `commands` and `voiceOver` |
+| `voFlows[].steps[].expect` | `spoken` and `notSpoken` (text or RegExp) matched against everything VoiceOver said during the step and in the `wait` after it (default 300 ms); `shot: true` saves a VoiceOver cursor screenshot |
+| `voWait`, `states[].voWait`, `voFlows[].wait` | ms `voiceover.cjs` waits after loading a page (default 6000) |
+| `voWindow` | `{ width, height }` of the Safari window `voiceover.cjs` opens, at the top left of the main display; without it the window keeps the size of the person's last Safari window |
 | `block` | RegExp sources of requests to abort: feedback widgets, chat, analytics |
 | `init` | function run in every page and frame before the app's scripts (dismiss tours, set consent) |
 | `ready(page)` | resolves when the page can be measured; default waits for network idle up to 30 s |
@@ -163,12 +167,102 @@ Learn more, not expanded", "polite: Saved") and follows focus on Tab. It shows r
 live regions. It does not show pronunciation, verbosity settings, forms-mode switching, or a particular browser and
 screen reader's bugs.
 
-**VoiceOver, automated (`voiceover.cjs`).** macOS only, after the person has run `npx @guidepup/setup setup` once and
-said yes to this run. `--browser safari` opens the URL in the person's Safari (states with a `setup` need
-`--browser chromium`, which runs the setup first). `--modes browse,headings,links,landmarks,tab` picks the
-navigations; each stops after three identical phrases or `--max` steps. Output: `voiceover/<state>-<browser>-<mode>.txt`
-and `.json`. Compare with `transcripts/<state>.txt`: same items, same order, names and states spoken. If VoiceOver
-stays on after a failure, Command+F5 turns it off.
+**VoiceOver, automated (`voiceover.cjs`).** macOS only. It switches VoiceOver on, which speaks aloud and takes over the
+keyboard, screen and pointer until it finishes, so it runs only after the person has said yes to this run
+(`--confirm`).
+
+```bash
+node <skill>/voiceover.cjs --config <config> --confirm [--states home,faq] [--flows newsletter-error] \
+  [--browser safari|chromium] [--modes tab,rotor,browse] [--max 150] [--out dir] [--tab-key Tab|Alt+Tab]
+```
+
+- `--browser safari` (the default) opens a Safari window of its own, loads each URL in it and closes it at the end.
+  States with a `setup` need `--browser chromium`, which runs the setup first.
+- `--modes`, for states: `tab`, `rotor` (every Web Rotor list: headings, landmarks, links, form controls), `browse`
+  (VO-Right), `headings`, `links`, `controls`; default `tab,rotor,browse`. A mode stops when VoiceOver says the same
+  thing three times running, comes back to its first phrase, or after `--max` steps.
+- `--flows` replays `voFlows` (§1) with VoiceOver's keys and checks each step's `expect` against everything VoiceOver
+  said during and after the step. A flow that cannot finish is recorded as failed and the run goes on to the next one.
+- Output in `voiceover/`: `<state>-<browser>-<mode>.txt`, `flow-<id>-<browser>.txt`, `shots/` for steps with
+  `shot: true`, and `run-<browser>-<time>.json` with each step's phrases, Safari's focused element (role, name,
+  position), the pointer position and the failures. Compare the transcripts with `transcripts/<state>.txt`: same
+  items, same order, names and states spoken.
+
+*One-time setup*, which the person runs in their own terminal:
+
+```bash
+npx @guidepup/setup@0.29.3 setup --macos-ignore-tcc-db   # opens VoiceOver Utility: tick "Allow VoiceOver to be controlled with AppleScript"
+npx @guidepup/setup@0.29.3 install voiceover             # guidepup's VoiceOver settings image, in ~/Library/Caches/guidepup
+```
+
+With System Integrity Protection on, setup cannot write macOS's permission databases; `--macos-ignore-tcc-db` skips
+those writes and the person grants the permissions to the app that runs the script (Terminal, or the editor whose
+terminal runs it): Privacy & Security > Accessibility on, and Automation for System Events, VoiceOver and Safari, each
+asked on first use. A first run can also ask "<app> wants access to control osascript". If it does, answer Allow and
+run again: a prompt that opens mid-run takes VoiceOver's focus, and every step after it fails. `setup.sh --check`
+reports the AppleScript switch and the settings image.
+
+*Before each run*, with the person:
+
+- VoiceOver speaks through the speakers, so the run waits until the person is off any call.
+- The keyboard and pointer stay untouched for the whole run. VoiceOver started in 2 to 26 s; four flows on one site
+  took 361 to 368 s; one state in the three default modes took 172 to 300 s (the explorer's rotor alone 141 s).
+  A run stops at the first app that comes forward and loses the states after it, so long batches run one state per
+  invocation (`for s in home faq about; do node voiceover.cjs ... --states $s; done`).
+- Other browser windows showing web pages are closed or their apps hidden: VoiceOver walked out of the run's page
+  into another app's page, by VO-Right and through the Item Chooser.
+- Apps that take Tab or Option-Tab as a global shortcut are quit first. ScreenBrush took Option-Tab, so Safari never
+  received it.
+- Another app coming to the front stops the run (`Stopped: <bundle id> came to the front`): the script checks its own
+  window is in front before every key press.
+- A hung app makes VoiceOver say "<app> is not responding" every few seconds, on top of the page's speech; wait until
+  the app recovers or the person quits it.
+
+*What the script does about guidepup and Safari.* Each behavior below broke a run on macOS 14 before the script
+handled it; the log lines named here show it working.
+
+- **Start.** guidepup's own start uses a private call that SIP blocks, and fails with "VoiceOver cannot be started".
+  The script starts VoiceOver with `VoiceOverStarter`, as System Settings does.
+- **Keyboard focus.** guidepup activates VoiceOver before every VoiceOver command, and afterwards Safari had no
+  focused element: Tab and Option-Tab reached nothing. The script sends VoiceOver's keys without activating it;
+  VoiceOver reads them from whichever app is in front.
+- **What VoiceOver said.** guidepup's `lastSpokenPhrase()` returns its own log. After a key press VoiceOver stays
+  quiet for, that log records an empty phrase, then records the previous phrase again, as new, on the next press.
+  Every step (the modes, `tabTo`, `readTo`, `headingTo`, the Tab-key detection and the page entry) takes what guidepup
+  logged during the key press minus that repeat, and VoiceOver's live phrase when it logged nothing. The live phrase
+  alone missed items: guidepup returns from a key press after several seconds of polling, and by then VoiceOver can
+  be reading its hint ("You are currently on a button..."). Flow transcripts drop the repeated phrase.
+- **Into the page.** Safari usually puts VoiceOver inside the page by itself, and from inside the page the Item
+  Chooser lists only the page's own items. The script steps out (VO-Shift-Up) until VoiceOver names the page area
+  ("Out of <title> web content"), then interacts. After a reload, stepping out says nothing, so once Safari's Tab key
+  is known the script presses it once instead. The page area must carry the run's page title, so another window's
+  page ("Occupation distribution · Explore Programs web content") is never entered. Log line: `Into the page:`.
+- **Safari's Tab key.** With "Press Tab to highlight each item on a webpage" off, Safari's default, Tab reaches
+  buttons and fields only and Option-Tab reaches links. From the top of the page the script presses Tab, then
+  Option-Tab, and flows use the first key after which VoiceOver names a link. Log: `Safari's Tab key here:`, with each
+  press, the focused element and the pointer. The detection failed on a page whose first controls open popups, so a
+  run that already knows the key passes `--tab-key` (the person's Safari setting does not change between runs).
+- **Pointer.** guidepup's settings move the pointer onto whatever VoiceOver reads
+  (`SCRConfigurationCursorTrackingMToVO`), which hovers it: a menu that opens on hover opened as VoiceOver reached its
+  button, and the button then announced its "close" label. The script starts VoiceOver with that setting off, which
+  guidepup writes to a shadow of its settings image, and parks the pointer on the menu bar, putting it back at the end.
+- **Window size.** Safari opens the window at the size of the person's last Safari window; one left 564 px for the
+  page, which got the phone layout. `voWindow` (§1) sets the size.
+- **Screenshots.** VoiceOver says "Screenshot saved" after each `shot`; the script listens until that has been said
+  before the next step.
+
+*When a step fails*, read that step's `focus` in the run JSON before calling it a site defect. An empty `focus`
+means Safari has no focused element. Repeat the same keys without VoiceOver (System Events key codes, then Safari's
+`AXFocusedUIElement`) and in headless Chromium: a dialog that dropped focus on Escape under VoiceOver dropped it in
+both repeats too, so the defect was the site's. `DEBUG='guidepup*'` traces every key and phrase poll, and `/usr/bin/log show --predicate
+'subsystem == "com.apple.TCC"'` shows permission prompts (call `/usr/bin/log` by path when a shell function shadows
+`log`).
+
+*After a run.* If VoiceOver stays on after a failure, Command+F5 turns it off. guidepup's teardown detaches its
+settings image and leaves four symlinks pointing into it,
+`~/Library/Preferences/com.apple.VoiceOver4.portable.{scrd,scrd.vou,scro,scui}`; the next run replaces them. When the
+person uses VoiceOver themselves, remove the symlinks, and only symlinks:
+`for f in ~/Library/Preferences/com.apple.VoiceOver4.portable.*; do [ -L "$f" ] && rm "$f"; done`.
 
 **Manual protocol, per combination.** Run each key state and each flow, and write down what was spoken:
 
@@ -209,7 +303,11 @@ Every fix leaves a test in the project, so CI catches it coming back. Copy `temp
 `tests/a11y/<flow>.a11y.spec.ts` per flow from `templates/a11y.spec.ts`. Install with
 `npm i -D @playwright/test @axe-core/playwright` (ask before adding dependencies). Each test names the finding it
 guards in a comment. Run each new test once on the code before the fix: it must fail there, or it does not test the
-fix.
+fix. A test passes on the bug when it skips a step of the path that failed: a dialog test that pressed Escape straight
+after opening passed, while the bug needed an address typed and submitted first, so the test repeats the whole path.
+
+Against a dev server that has just started, run with `--workers=1` or load the pages once first: in parallel, 7 of 37
+tests failed while their pages were still compiling, and all passed one at a time.
 
 Good regression tests: axe on the state (serious and critical), Tab sequence names, focus after open, close and
 navigation, `toMatchAriaSnapshot` for names, roles and states, announcements, reflow at 320 px, a visible focus
@@ -223,6 +321,8 @@ The before image comes from the code before the fix, in a separate copy so the w
 ```bash
 git worktree add ../<repo>-before <commit-before-the-fix>
 cd ../<repo>-before && npm ci && npm run dev -- --port 5174     # its own node_modules: a symlinked one makes Vite refuse files outside its root
+# on APFS, `cp -cR ../<repo>/node_modules .` clones them in seconds instead of npm ci;
+# gitignored files such as .env are missing too: link them (ln -s ../<repo>/.env .) when a step calls the app's API
 node <skill>/capture.cjs --config _raw/a11y/audit.config.cjs --base-url http://localhost:5174 --state home --target "footer a" --focus --out _raw/a11y/report/focus-ring-before.png
 node <skill>/capture.cjs --config _raw/a11y/audit.config.cjs --state home --target "footer a" --focus --out _raw/a11y/report/focus-ring-after.png
 git worktree remove ../<repo>-before

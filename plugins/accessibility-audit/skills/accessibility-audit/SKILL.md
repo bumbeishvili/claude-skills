@@ -32,7 +32,7 @@ It changes nothing and exits 1 when a required part is missing. Then ask the per
 their own terminal: it installs about 120 MB of pinned npm packages into `~/.cache/accessibility-audit`
 (`A11Y_AUDIT_HOME` moves it) plus Playwright's Chromium, Firefox and WebKit (about 1.2 GB, shared with other
 Playwright installs). Optional parts it reports: `pdfinfo` for linked PDFs (`brew install poppler`), macOS `say` for
-spoken walkthroughs, and VoiceOver automation (`npx @guidepup/setup setup`, run by the person).
+spoken walkthroughs, and VoiceOver automation (two `npx @guidepup/setup` commands the person runs, playbook.md §6).
 
 ## 1. Agree the scope, write the config
 
@@ -87,15 +87,19 @@ what to watch for.
 ## 5. Real screen readers (ask first)
 
 The virtual screen reader models a screen reader's browse mode; real ones differ in wording, verbosity and browser
-pairing. On macOS, with the person's yes and VoiceOver automation enabled:
+pairing. On macOS, after the one-time VoiceOver setup in playbook.md §6 and with the person's yes for this run:
 
 ```bash
-node <skill>/voiceover.cjs --config _raw/a11y/audit.config.cjs --state home --confirm --browser safari
+node <skill>/voiceover.cjs --config _raw/a11y/audit.config.cjs --confirm --browser safari --states home --flows newsletter-error
 ```
 
-It turns VoiceOver on, which speaks aloud and takes over the keyboard until it finishes, and records reading order,
-headings, links, landmarks and Tab. NVDA, JAWS, TalkBack and iOS VoiceOver are run by a person with the protocol in
-playbook.md §6; list each combination tested in the report.
+It turns VoiceOver on, which speaks aloud and takes over the keyboard, screen and pointer until it finishes (four
+flows took about six minutes). It records what VoiceOver says through each state (Tab, the Web Rotor's lists, reading
+order) and checks each `voFlows` task's announcements. Before it starts, the person quits apps that use Tab or
+Option-Tab as a shortcut and leaves the Mac alone; another app coming to the front stops the run. Before calling a
+failed step a site defect, read its `focus` in `voiceover/run-*.json` and repeat the keys without VoiceOver
+(playbook.md §6). NVDA, JAWS, TalkBack and iOS VoiceOver are run by a person with the protocol in playbook.md §6; list
+each combination tested in the report.
 
 ## 6. The criteria no script decides
 

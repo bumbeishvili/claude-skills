@@ -47,7 +47,10 @@ A router that intercepts `#` links cancels the browser's focus move; focus the t
 - Removing the focused element (delete a row, dismiss a banner): focus the next item, else the previous one, else
   the list's heading with `tabindex="-1"`.
 - Closing a dialog, menu or popover: focus returns to the control that opened it.
-- Single-page navigation: set `document.title`, then focus the new page's `h1` (`tabindex="-1"`) or `main`.
+- Single-page navigation: set `document.title`, then focus the new page's `h1` (`tabindex="-1"`) or `main`. A
+  focused `main` needs a name: VoiceOver read an unnamed one as just "main", and the focus move cut off SvelteKit's
+  title announcement, so the new page went unnamed. `main.setAttribute('aria-labelledby', h1.id)` after each
+  navigation makes it "<page heading>, main"; a page without an `h1` removes the attribute.
 - A deep link or `#hash` on load: focus the target section.
 - A multi-step form's "Next": focus the next step's heading or first field.
 
@@ -64,6 +67,16 @@ dialog.addEventListener('close', () => opener.focus(), { once: true });
 A custom dialog needs `role="dialog"`, `aria-modal="true"`, `aria-labelledby` its title, focus moved inside on open,
 Tab and Shift+Tab kept inside (wrap from last to first and back), `inert` on the rest of the page, Escape to close, and
 focus returned to the opener.
+
+Record the opener once, when the dialog opens. Code that also runs on later updates records the focused field
+instead, and focus is lost when the dialog closes: a Svelte 4 `$:` block that read `document.activeElement` re-ran on
+every keystroke in the dialog's field. Keep the open and close logic in a function and call it from a statement that
+depends on the open state alone:
+
+```js
+function onOpenChange(open) { /* open: remember the opener, focus the field; closed: reset, opener.focus() */ }
+$: onOpenChange($dialogOpen);
+```
 
 ### Menu button
 `kbd:popup-*`, `kbd:composite-*`, `hover:hover-only` (2.1.1, 4.1.2). For site navigation a disclosure (a button with
@@ -166,6 +179,8 @@ el.addEventListener('keydown', (event) => {
 ```
 
 and expose its state: `aria-pressed` for toggles, `aria-expanded` for disclosures, `aria-checked` for `role="switch"`.
+VoiceOver with Safari read an unpressed `aria-pressed` button as "toggle button" with no state and said nothing about
+the change when Enter pressed it; when the change matters, a status message also says it ("Selected: …").
 
 ### Order
 `kbd:order-jump`, `kbd:positive-tabindex`, `struct:css-reorder`, `sr:reading-order-jump`, `kbd:reverse-mismatch`

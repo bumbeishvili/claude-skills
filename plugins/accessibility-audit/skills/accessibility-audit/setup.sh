@@ -62,10 +62,12 @@ ffmpeg_ok() {
 	return "$ok"
 }
 
+# VoiceOver accepts AppleScript, and guidepup's VoiceOver settings image is installed ('install voiceover').
 voiceover_automation_ok() {
 	[ "$(uname -s)" = "Darwin" ] || return 1
 	[ "$(defaults read com.apple.VoiceOver4/default SCREnableAppleScript 2>/dev/null || true)" = "1" ] || return 1
-	[ -e /private/var/db/Accessibility/.VoiceOverAppleScriptEnabled ]
+	[ -e /private/var/db/Accessibility/.VoiceOverAppleScriptEnabled ] || return 1
+	compgen -G "$HOME/Library/Caches/guidepup/voiceover/*/*/guidepup-voiceover-preferences-macos-*.dmg" >/dev/null
 }
 
 report() {
@@ -77,7 +79,7 @@ report() {
 	if [ "$(uname -s)" = "Darwin" ]; then
 		command -v say >/dev/null && command -v afinfo >/dev/null && say_line "ok" "macOS say and afinfo (spoken walkthroughs)" || optional "macOS say and afinfo"
 		voiceover_automation_ok && say_line "ok" "VoiceOver automation enabled" \
-			|| optional "VoiceOver automation, for voiceover.cjs: the person runs 'npx @guidepup/setup setup' in their own terminal"
+			|| optional "VoiceOver automation, for voiceover.cjs: the person runs 'npx @guidepup/setup@0.29.3 setup --macos-ignore-tcc-db' and 'npx @guidepup/setup@0.29.3 install voiceover' in their own terminal (playbook.md §6)"
 	else
 		optional "VoiceOver is macOS only; NVDA (Windows) and Orca (Linux) runs are described in playbook.md"
 	fi
