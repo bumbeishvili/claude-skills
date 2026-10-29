@@ -181,6 +181,47 @@ grep -rn "__repro" src/
 Run the `grep` before you report anything. A hook left in source outlives the
 investigation, and the next person reads it as intentional API.
 
+**Find what moves focus.** When focus ends up somewhere wrong, log every `focus()` call
+and every event around it from an init script. It lives in the browser, not in app
+source, so there is nothing to remove afterwards:
+
+```js
+await page.addInitScript(() => {
+  window.__focusLog = [];
+  const t0 = performance.now();
+  const at = () => Math.round(performance.now() - t0);
+  const focus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function (...args) {
+    window.__focusLog.push(`${at()} focus() ${this.tagName}#${this.id}`);
+    return focus.apply(this, args);
+  };
+  for (const type of ['keydown', 'input', 'click']) {
+    document.addEventListener(type, (e) => window.__focusLog.push(`${at()} ${type} ${e.key ?? ''} on ${e.target.tagName}`), true);
+  }
+  document.addEventListener('focusout', (e) => window.__focusLog.push(`${at()} focusout ${e.target.tagName} -> ${e.relatedTarget?.tagName ?? 'null'}`), true);
+});
+// ...the steps...
+console.log((await page.evaluate(() => window.__focusLog)).join('\n'));
+```
+
+A dialog that dropped focus on Escape showed a `focus()` on its email field after
+every `input` event: the code that stored the element to return focus to re-ran on each
+keystroke and stored the field, so Escape focused a field that was being removed.
+
+**Safari's focus without Playwright.** When the bug is Safari's own and Playwright's
+WebKit is not enough, drive the real Safari with System Events and read its focused
+element through the accessibility API. It needs Accessibility permission for the app
+running the script, and it takes over the keyboard, so ask first:
+
+```js
+const osa = (s) => require('child_process').execFileSync('osascript', ['-e', s], { encoding: 'utf8' }).trim();
+osa('tell application "System Events" to key code 48 using {option down}'); // Option-Tab
+osa(`tell application "System Events" to tell process "Safari"
+set el to value of attribute "AXFocusedUIElement"
+return (value of attribute "AXRole" of el) & " / " & (value of attribute "AXTitle" of el)
+end tell`);
+```
+
 ---
 
 ## 5. Measure, and then distrust the measurement
@@ -206,6 +247,11 @@ Specific traps:
 - **Rounding.** A "1px offset" is often two different rounding rules, not a bug.
 - **Sampling one point.** One pixel or one row proves nothing. Sample many and report
   the distribution — median, worst case, count — not a single value.
+- **Skipping a step of the user's path.** A script that leaves out typing, a submit or
+  the pause between steps can pass on the bug. Escape straight after typing kept focus
+  in the dialog above; with the address submitted and its error shown first, focus was
+  lost. Repeat the reported path in full, waits included, and only then shorten it while
+  checking that it still fails.
 
 When a measurement disagrees with the source of truth, work out which one is wrong
 before writing any fix. A fix aimed at a measurement artifact moves the number without
@@ -371,6 +417,13 @@ REPORT_DIR=<project>/_raw/report PHASE=after  NODE_PATH="$(npm root -g)" node so
   is a missing element, box the container it belongs in.
 - **Take the Before shot while the bug still reproduces.** After the fix, the only way
   to get one is to run the script against an isolated copy of the pre-fix code.
+- **Make the pre-fix copy a working app.** `git worktree add ../<repo>-before <commit>`,
+  then give it its own `node_modules`: on APFS, `cp -cR ../<repo>/node_modules .` clones
+  them in seconds. With a symlinked `node_modules`, Vite refused the client files from
+  outside the copy's root, so the page never became interactive. Link gitignored files
+  such as `.env` (`ln -s ../<repo>/.env .`) when a step calls the app's API. Before
+  trusting a failure there, check that one control responds: a copy whose scripts never
+  loaded fails every check, and that looks like the bug.
 - **Keep the route, filters, scroll position and viewport consistent.** Capture
   distinct affected views, including data tables. Add phone views only when needed
   by the change. Use straight quotes, short issue/fix captions and no header banners.
