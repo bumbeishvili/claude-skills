@@ -144,7 +144,7 @@ node headed.cjs --config _raw/a11y/audit.config.cjs --confirm [--states a,b] [--
 |---|---|
 | `<state>-walk.webm`, `.mp4`, `.vtt` | the walk; the MP4 (with `--narrate`) carries the spoken track and captions |
 | `<state>-steps.json` | each stop: snapshot line, speech, flags, time in the video |
-| `<state>-zoom-200.webm`, `-reflow-320px`, `-text-spacing`, `-reduced-motion` | `--views` |
+| `<state>-zoom-200.webm`, `-reflow-320px`, `-text-spacing`, `-reduced-motion` | `--views`; with `--no-walks`, the views alone, for states that share a page with one already walked |
 | `<flow>-flow.webm`, `.mp4`, `.vtt`, `.json` | `--flows`: each step announced, then focus, announcements and title |
 
 What to watch, per stop: an indicator you can see against that background; the order follows reading order; nothing
@@ -228,8 +228,10 @@ node <skill>/capture.cjs --config _raw/a11y/audit.config.cjs --state home --targ
 git worktree remove ../<repo>-before
 ```
 
-`capture.cjs` scrolls the target to the middle of the window, takes the full window, and writes the target's box
-next to the image. `--focus` reaches it with Tab; `--hover` rests the pointer on it. Then one spec for all fixes:
+`capture.cjs` scrolls the target to the middle of the window, takes the full window, and writes the box to mark
+next to the image. `--focus` reaches the target with Tab; `--hover` rests the pointer on it; `--press <key>` (repeatable)
+presses keys after that, such as Escape or ArrowRight; `--viewport 320x640` changes the window; `--mark <selector>`
+boxes another element, such as the card whose edge clips the target's ring. Then one spec for all fixes:
 
 ```json
 [{ "out": "focus-ring.png",

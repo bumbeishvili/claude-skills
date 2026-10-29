@@ -23,16 +23,24 @@ const NAME_REQUIRED = new Set(['button', 'link', 'checkbox', 'radio', 'switch', 
 const MAX_EVIDENCE_SHOTS = 20;
 
 /**
- * Waits for the page to come to rest after a key press: finite CSS and Web Animations end (up to 400 ms), and
- * scrolling stops. Smooth scrolling (scroll-behavior: smooth) moves the page for several frames after focus
- * arrives, and measuring earlier finds the control still outside the window.
+ * Waits for the page to come to rest after a key press: finite CSS and Web Animations end, and scrolling stops.
+ * Animations on the focused element, its ancestors or its descendants get up to 1500 ms, since they decide how the
+ * focused control looks (a label that fades back in after a delay); others get up to 400 ms. Smooth scrolling
+ * (scroll-behavior: smooth) moves the page for several frames after focus arrives, and measuring earlier finds the
+ * control still outside the window.
  */
 async function settle(page) {
 	await page.evaluate(() => new Promise((resolve) => {
 		requestAnimationFrame(() => requestAnimationFrame(() => {
+			const focused = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
 			const running = document.getAnimations().filter((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming?.().endTime));
+			const onFocus = (a) => {
+				const t = a.effect?.target;
+				return !!focused && t instanceof Element && (t === focused || t.contains(focused) || focused.contains(t));
+			};
 			// A cancelled animation rejects `finished`; that still means it is over.
-			Promise.race([Promise.all(running.map((a) => a.finished.catch(() => null))), new Promise((r) => setTimeout(r, 400))]).then(resolve);
+			const until = (list, ms) => Promise.race([Promise.all(list.map((a) => a.finished.catch(() => null))), new Promise((r) => setTimeout(r, ms))]);
+			Promise.all([until(running.filter(onFocus), 1500), until(running.filter((a) => !onFocus(a)), 400)]).then(resolve);
 		}));
 	}));
 	await page.evaluate(() => new Promise((resolve) => {

@@ -4,7 +4,7 @@
 // screen reader), and flags a stop that is covered or off screen. Each walk is recorded as a video.
 //   --flows     also plays the config's flows: each step shown before it runs, then where focus landed and what was
 //               announced (one video per flow)
-//   --no-walks  plays the flows only
+//   --no-walks  skips the walks: plays only the flows, the views, or both
 //   --speak     says each stop or step aloud with the macOS system voice while it runs
 //   --narrate   also builds an MP4 per video with the spoken track and captions, for review away from the keyboard
 //   --views     after the walk, shows the page at 200% zoom, at 320 px, with the text-spacing override and with
@@ -40,7 +40,7 @@ function parseArgs(argv) {
 		else throw new Error(`Unknown argument ${argv[i]}`);
 	}
 	if (!args.config) throw new Error('Missing --config <file>');
-	if (!args.walks && !args.flows) throw new Error('--no-walks leaves nothing to play; add --flows');
+	if (!args.walks && !args.flows && !args.views) throw new Error('--no-walks leaves nothing to play; add --flows or --views');
 	return args;
 }
 
@@ -76,7 +76,7 @@ function focusNow() {
 	const onScreen = r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
 	const top = onScreen ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
 	const covered = !!(top && !top.closest('[data-a11y-tool]') && top !== el && !el.contains(top) && !top.contains(el));
-	return { first: stops[0] === el && again, index: stops.indexOf(el), describe: window.__a11y.describe(el), iframe: el.localName === 'iframe', onScreen, covered, coveredBy: covered ? window.__a11y.describe(top) : null, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+	return { again, index: stops.indexOf(el), describe: window.__a11y.describe(el), iframe: el.localName === 'iframe', onScreen, covered, coveredBy: covered ? window.__a11y.describe(top) : null, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
 }
 
 /** Speech line of an aria snapshot entry: `- button "Save" [pressed]` → `button "Save" [pressed]`. */
@@ -141,7 +141,9 @@ async function walk(page, state, args, show) {
 			continue;
 		}
 		bodyInARow = 0;
-		if (focus.first) break;
+		// Back on a stop already walked: the whole Tab sequence has played. (Not only the first stop: a menu open at the
+		// start closes once focus leaves it, so its items never come round again.)
+		if (focus.again) break;
 		const said = (await speech.take()).join(', ');
 		const line = focus.iframe ? '- iframe' : kbd.parseSnapshotLine(await page.locator(':focus').last().ariaSnapshot({ timeout: 3000 })).line;
 		const flags = [!focus.onScreen && 'OFF SCREEN', focus.covered && `COVERED by ${focus.coveredBy}`].filter(Boolean).join(' · ');
@@ -215,24 +217,27 @@ async function main() {
 	const outDir = path.resolve(args.out || config.out || path.join(process.cwd(), '_raw', 'a11y'), 'headed');
 	fs.mkdirSync(outDir, { recursive: true });
 	const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-headed-'));
-	const states = args.walks ? config.states.filter((s) => !args.states || args.states.includes(s.id)) : [];
+	const states = args.walks || args.views ? config.states.filter((s) => !args.states || args.states.includes(s.id)) : [];
 	if (args.states) for (const id of args.states) if (!config.states.some((s) => s.id === id)) throw new Error(`--states: no state "${id}" in the config`);
 	const { chromium } = load('playwright');
 	const browser = await chromium.launch({ headless: args.headless, args: args.headless ? [] : ['--window-position=40,40'] });
 	const summary = [];
 	try {
 		for (const state of states) {
-			const options = contextOptions(config, state.viewport || 'desktop', { reducedMotion: state.reducedMotion || 'no-preference' });
-			const opened = await openPage(browser, config, { ...options, recordVideo: { dir: workDir, size: options.viewport } }, state.path);
-			const { page } = opened;
-			if (state.setup) {
-				await state.setup(page, { ...helpers(page), press: (key) => page.keyboard.press(key) });
-				await kbd.settle(page);
+			const entry = { state: state.id };
+			if (args.walks) {
+				const options = contextOptions(config, state.viewport || 'desktop', { reducedMotion: state.reducedMotion || 'no-preference' });
+				const opened = await openPage(browser, config, { ...options, recordVideo: { dir: workDir, size: options.viewport } }, state.path);
+				const { page } = opened;
+				if (state.setup) {
+					await state.setup(page, { ...helpers(page), press: (key) => page.keyboard.press(key) });
+					await kbd.settle(page);
+				}
+				const show = presenter(page, args, opened.startedAt, workDir, state.id);
+				const steps = await walk(page, state, args, show);
+				fs.writeFileSync(path.join(outDir, `${state.id}-steps.json`), JSON.stringify(steps, null, 1));
+				Object.assign(entry, { stops: steps.length }, await finishRecording(opened, `${state.id}-walk`, show.clips, args, outDir, workDir));
 			}
-			const show = presenter(page, args, opened.startedAt, workDir, state.id);
-			const steps = await walk(page, state, args, show);
-			fs.writeFileSync(path.join(outDir, `${state.id}-steps.json`), JSON.stringify(steps, null, 1));
-			const entry = { state: state.id, stops: steps.length, ...(await finishRecording(opened, `${state.id}-walk`, show.clips, args, outDir, workDir)) };
 			if (args.views) {
 				const desktop = contextOptions(config, config.desktopViewport || 'desktop');
 				const views = [
@@ -244,7 +249,7 @@ async function main() {
 				entry.views = views.map((v) => path.relative(outDir, v));
 			}
 			summary.push(entry);
-			console.log(`${state.id}: ${entry.stops} stops → ${entry.narrated || entry.video}${entry.views ? `, views: ${entry.views.join(', ')}` : ''}`);
+			console.log(`${state.id}: ${entry.stops === undefined ? 'no walk' : `${entry.stops} stops → ${entry.narrated || entry.video}`}${entry.views ? `, views: ${entry.views.join(', ')}` : ''}`);
 		}
 		for (const flow of args.flows ? config.flows : []) {
 			const options = contextOptions(config, flow.viewport || 'desktop');
